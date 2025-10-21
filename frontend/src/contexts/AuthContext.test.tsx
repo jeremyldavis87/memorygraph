@@ -2,6 +2,24 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { AuthProvider } from './AuthContext';
 
+// Mock axios
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  })),
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn()
+}));
+
 // Mock the auth service
 jest.mock('../services/authService', () => ({
   login: jest.fn(),
