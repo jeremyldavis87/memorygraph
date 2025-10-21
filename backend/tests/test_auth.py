@@ -35,7 +35,7 @@ def test_login_success(test_user):
     assert "access_token" in data
     assert data["token_type"] == "bearer"
 
-def test_login_invalid_credentials():
+def test_login_invalid_credentials(setup_database):
     response = client.post("/api/v1/auth/login", data={
         "username": "test@example.com",
         "password": "wrongpassword"

@@ -11,6 +11,17 @@ def auth_headers(test_user):
         "username": "test@example.com",
         "password": "testpassword"
     })
+    if response.status_code != 200:
+        print(f"Login failed with status {response.status_code}: {response.text}")
+        # Try to debug by checking if user exists
+        from app.core.database import get_db
+        from app.models.user import User
+        db = next(get_db())
+        user = db.query(User).filter(User.email == "test@example.com").first()
+        print(f"User exists in DB: {user is not None}")
+        if user:
+            print(f"User email: {user.email}, username: {user.username}")
+        db.close()
     assert response.status_code == 200, f"Login failed: {response.text}"
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
