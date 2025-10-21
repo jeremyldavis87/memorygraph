@@ -30,7 +30,7 @@ class Note(Base):
     entities = Column(JSON)  # Extracted entities
     action_items = Column(JSON)  # Extracted action items
     tags = Column(JSON)  # Extracted tags
-    metadata = Column(JSON)  # Additional metadata
+    note_metadata_json = Column(JSON)  # Additional metadata
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

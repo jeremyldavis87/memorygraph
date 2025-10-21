@@ -2,7 +2,7 @@ import os
 import uuid
 from typing import Optional
 from PIL import Image
-import cv2
+# import cv2  # Temporarily disabled due to numpy compatibility issues
 import numpy as np
 
 def generate_unique_filename(original_filename: str) -> str:

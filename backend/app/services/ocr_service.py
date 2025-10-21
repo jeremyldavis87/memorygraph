@@ -1,4 +1,4 @@
-import cv2
+# import cv2  # Temporarily disabled due to numpy compatibility issues
 import pytesseract
 from PIL import Image
 import numpy as np

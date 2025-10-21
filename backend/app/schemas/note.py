@@ -21,6 +21,7 @@ class NoteUpdate(BaseModel):
     tags: Optional[List[Dict[str, Any]]] = None
     entities: Optional[List[Dict[str, Any]]] = None
     action_items: Optional[List[Dict[str, Any]]] = None
+    note_metadata_json: Optional[Dict[str, Any]] = None
 
 class NoteResponse(NoteBase):
     id: int
@@ -35,7 +36,7 @@ class NoteResponse(NoteBase):
     entities: Optional[List[Dict[str, Any]]]
     action_items: Optional[List[Dict[str, Any]]]
     tags: Optional[List[Dict[str, Any]]]
-    metadata: Optional[Dict[str, Any]]
+    note_metadata_json: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: Optional[datetime]
     captured_at: Optional[datetime]

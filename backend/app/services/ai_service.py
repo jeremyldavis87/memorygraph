@@ -34,10 +34,10 @@ class AIService:
                 "entities": entities,
                 "action_items": action_items,
                 "tags": tags,
-                "note_metadata": {
-                    "ai_processed": True,
-                    "processing_timestamp": note.created_at.isoformat()
-                }
+            "note_metadata_json": {
+                "ai_processed": True,
+                "processing_timestamp": note.created_at.isoformat()
+            }
             }
         except Exception as e:
             print(f"AI processing failed: {e}")
@@ -179,7 +179,7 @@ class AIService:
             "entities": [],
             "action_items": [],
             "tags": [],
-            "note_metadata": {
+            "note_metadata_json": {
                 "ai_processed": False,
                 "processing_timestamp": note.created_at.isoformat()
             }

@@ -185,7 +185,7 @@ def upload_note(
         note.entities = ai_result.get("entities")
         note.action_items = ai_result.get("action_items")
         note.tags = ai_result.get("tags")
-        note.metadata = ai_result.get("metadata")
+        note.note_metadata_json = ai_result.get("note_metadata_json")
         
         db.commit()
         db.refresh(note)
