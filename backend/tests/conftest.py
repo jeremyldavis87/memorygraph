@@ -5,6 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.core.database import get_db, Base
 from app.models.user import User
+from app.models.note import Note
+from app.models.category import Category
+from app.models.entity import Entity
 from app.utils.security import get_password_hash
 
 # Test database
