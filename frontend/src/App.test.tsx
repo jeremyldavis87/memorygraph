@@ -28,7 +28,8 @@ jest.mock('./contexts/AuthContext', () => ({
     logout: jest.fn(),
     register: jest.fn(),
     loading: false
-  })
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children
 }));
 
 test('renders app without crashing', () => {
