@@ -8,6 +8,7 @@ This guide will help you deploy the MemoryGraph application to AWS account `9693
 - ✅ Docker installed and running
 - ✅ Terraform installed (>= 1.0)
 - ✅ Access to AWS account 969325212479
+- ✅ AWS Secrets Manager secrets created (see Secrets Management section)
 
 ## Architecture
 The deployment creates the following AWS resources:
@@ -29,7 +30,18 @@ aws sts get-caller-identity --profile jeremy_personal_local
 # Should return account: 969325212479
 ```
 
-### 2. Deploy Infrastructure
+### 2. Set Up Secrets in AWS Secrets Manager
+```bash
+# Create secrets using the management script
+./manage-secrets.sh create openai-api-key "your-openai-api-key"
+./manage-secrets.sh create anthropic-api-key "your-anthropic-api-key"
+./manage-secrets.sh create jwt-secret "your-jwt-secret"
+
+# Or update existing secrets
+./manage-secrets.sh update openai-api-key "new-openai-api-key"
+```
+
+### 3. Deploy Infrastructure
 ```bash
 # Run the deployment script
 ./deploy.sh
@@ -62,7 +74,7 @@ terraform output backend_ecr_repository
 terraform output frontend_ecr_repository
 ```
 
-### 5. Deploy Application Updates
+### 6. Deploy Application Updates
 ```bash
 # Update ECS service with new task definition
 aws ecs update-service \
@@ -142,6 +154,39 @@ aws logs describe-log-streams --log-group-name /ecs/memorygraph
 # Check RDS status
 aws rds describe-db-instances --db-instance-identifier memorygraph-db
 ```
+
+## Secrets Management
+
+### Using the Secrets Management Script
+```bash
+# List all secrets
+./manage-secrets.sh list
+
+# Create a new secret
+./manage-secrets.sh create secret-name "secret-value"
+
+# Update an existing secret
+./manage-secrets.sh update secret-name "new-secret-value"
+
+# Get a secret value
+./manage-secrets.sh get secret-name
+
+# Delete a secret
+./manage-secrets.sh delete secret-name
+```
+
+### Required Secrets
+The following secrets must be created in AWS Secrets Manager:
+- `memorygraph/openai-api-key` - OpenAI API key for AI processing
+- `memorygraph/anthropic-api-key` - Anthropic API key for AI processing  
+- `memorygraph/jwt-secret` - JWT secret for authentication
+
+### Security Benefits
+- ✅ Secrets are encrypted at rest using AWS KMS
+- ✅ Secrets are never stored in code or configuration files
+- ✅ Fine-grained access control through IAM policies
+- ✅ Automatic rotation capabilities
+- ✅ Audit logging for secret access
 
 ## Post-Deployment
 

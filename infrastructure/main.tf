@@ -273,14 +273,6 @@ resource "aws_ecs_task_definition" "main" {
           value = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:6379/0"
         },
         {
-          name  = "SECRET_KEY"
-          value = var.secret_key
-        },
-        {
-          name  = "OPENAI_API_KEY"
-          value = var.openai_api_key
-        },
-        {
           name  = "API_V1_STR"
           value = "/api/v1"
         },
@@ -299,6 +291,21 @@ resource "aws_ecs_task_definition" "main" {
         {
           name  = "LOG_LEVEL"
           value = "INFO"
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "SECRET_KEY"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret"
+        },
+        {
+          name      = "OPENAI_API_KEY"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key"
+        },
+        {
+          name      = "ANTHROPIC_API_KEY"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key"
         }
       ]
 
@@ -482,6 +489,38 @@ resource "aws_iam_role" "ecs_task_role" {
     ]
   })
 }
+
+# IAM Policy for Secrets Manager access
+resource "aws_iam_policy" "secrets_manager_policy" {
+  name        = "${var.project_name}-secrets-manager-policy"
+  description = "Policy for accessing Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key*",
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key*",
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret*"
+        ]
+      }
+    ]
+  })
+}
+
+# Attach the secrets manager policy to the ECS task role
+resource "aws_iam_role_policy_attachment" "ecs_task_secrets_policy" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.secrets_manager_policy.arn
+}
+
+# Data source for current AWS account ID
+data "aws_caller_identity" "current" {}
 
 # ECR Repositories
 resource "aws_ecr_repository" "backend" {

@@ -1,0 +1,21 @@
+# Local Terraform Configuration
+# Copy this to terraform.tfvars and update with your actual values
+
+aws_region = "us-west-2"
+environment = "prod"
+project_name = "memorygraph"
+
+# Database password (generate a strong password)
+db_password = "YourSecureDatabasePassword2024!"
+
+# OpenAI API key for AI processing
+openai_api_key = "your-openai-api-key-here"
+
+# Secret key for JWT tokens (generate a random string)
+secret_key = "YourSecureJWTSecretKey2024!"
+
+# Allowed CORS origins for production
+allowed_origins = [
+  "https://memorygraph.yourdomain.com",
+  "https://www.memorygraph.yourdomain.com"
+]

@@ -22,18 +22,8 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "openai_api_key" {
-  description = "OpenAI API key for AI processing"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "secret_key" {
-  description = "Secret key for JWT tokens"
-  type        = string
-  sensitive   = true
-}
+# Note: OpenAI API key and JWT secret are now stored in AWS Secrets Manager
+# They are retrieved at runtime by the ECS tasks
 
 variable "allowed_origins" {
   description = "Allowed CORS origins"
