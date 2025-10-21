@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Search, FileText, User, Building, Calendar, Tag } from 'lucide-react';
-import { searchService } from '../services/searchService';
+import { searchService } from '../services/searchService.ts';
 
 export const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');

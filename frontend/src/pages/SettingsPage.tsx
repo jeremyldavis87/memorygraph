@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.tsx';
 import { useMutation, useQuery } from 'react-query';
 import { Save, User, Camera, Brain, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';

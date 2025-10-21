@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { Search, Filter, FileText, Calendar, Tag, Eye } from 'lucide-react';
-import { notesService } from '../services/notesService';
-import { categoriesService } from '../services/categoriesService';
+import { notesService } from '../services/notesService.ts';
+import { categoriesService } from '../services/categoriesService.ts';
 
 export const NotesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');

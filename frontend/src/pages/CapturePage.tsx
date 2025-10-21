@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQuery } from 'react-query';
 import { Camera, Upload, FileText, Settings, X } from 'lucide-react';
-import { notesService } from '../services/notesService';
-import { categoriesService } from '../services/categoriesService';
+import { notesService } from '../services/notesService.ts';
+import { categoriesService } from '../services/categoriesService.ts';
 import toast from 'react-hot-toast';
 
 export const CapturePage: React.FC = () => {

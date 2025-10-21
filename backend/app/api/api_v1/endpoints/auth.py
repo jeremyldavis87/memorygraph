@@ -19,6 +19,9 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # Truncate password to 72 characters if it's longer (bcrypt limit)
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -52,8 +55,23 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
+    # Check if username already exists
+    existing_username = db.query(User).filter(User.username == user.username).first()
+    if existing_username:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already taken"
+        )
+    
     # Create new user
-    hashed_password = get_password_hash(user.password)
+    try:
+        hashed_password = get_password_hash(user.password)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    
     db_user = User(
         email=user.email,
         username=user.username,

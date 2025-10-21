@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import datetime
 
@@ -9,6 +9,14 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) > 72:
+            raise ValueError('Password cannot be longer than 72 characters')
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
 
 class UserResponse(UserBase):
     id: int

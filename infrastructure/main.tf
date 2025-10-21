@@ -254,7 +254,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name  = "backend"
-      image = "${var.project_name}-backend:latest"
+      image = "${aws_ecr_repository.backend.repository_url}:latest"
       
       portMappings = [
         {
@@ -271,6 +271,34 @@ resource "aws_ecs_task_definition" "main" {
         {
           name  = "REDIS_URL"
           value = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:6379/0"
+        },
+        {
+          name  = "SECRET_KEY"
+          value = var.secret_key
+        },
+        {
+          name  = "OPENAI_API_KEY"
+          value = var.openai_api_key
+        },
+        {
+          name  = "API_V1_STR"
+          value = "/api/v1"
+        },
+        {
+          name  = "ALGORITHM"
+          value = "HS256"
+        },
+        {
+          name  = "ACCESS_TOKEN_EXPIRE_MINUTES"
+          value = "30"
+        },
+        {
+          name  = "DEBUG"
+          value = "false"
+        },
+        {
+          name  = "LOG_LEVEL"
+          value = "INFO"
         }
       ]
 
@@ -455,6 +483,86 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+# ECR Repositories
+resource "aws_ecr_repository" "backend" {
+  name                 = "${var.project_name}-backend"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = {
+    Name = "${var.project_name}-backend-ecr"
+  }
+}
+
+resource "aws_ecr_repository" "frontend" {
+  name                 = "${var.project_name}-frontend"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = {
+    Name = "${var.project_name}-frontend-ecr"
+  }
+}
+
+# ECR Lifecycle Policy
+resource "aws_ecr_lifecycle_policy" "backend" {
+  repository = aws_ecr_repository.backend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "frontend" {
+  repository = aws_ecr_repository.frontend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
 # Outputs
 output "alb_dns_name" {
   description = "DNS name of the load balancer"
@@ -471,4 +579,14 @@ output "redis_endpoint" {
   description = "Redis cluster endpoint"
   value       = aws_elasticache_cluster.main.cache_nodes[0].address
   sensitive   = true
+}
+
+output "backend_ecr_repository" {
+  description = "Backend ECR repository URL"
+  value       = aws_ecr_repository.backend.repository_url
+}
+
+output "frontend_ecr_repository" {
+  description = "Frontend ECR repository URL"
+  value       = aws_ecr_repository.frontend.repository_url
 }

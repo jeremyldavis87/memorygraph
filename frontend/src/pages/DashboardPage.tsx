@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { Camera, FileText, Search, Plus, TrendingUp, Clock } from 'lucide-react';
-import { notesService } from '../services/notesService';
+import { notesService } from '../services/notesService.ts';
 
 export const DashboardPage: React.FC = () => {
   const { data: recentNotes, isLoading: notesLoading } = useQuery(
