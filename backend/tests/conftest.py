@@ -23,15 +23,25 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def setup_database():
+    # Drop all tables first to ensure clean state
+    Base.metadata.drop_all(bind=engine)
+    # Create all tables
     Base.metadata.create_all(bind=engine)
     yield
+    # Clean up after test
     Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture
 def test_user(setup_database):
     db = TestingSessionLocal()
+    # Clean up any existing test user first
+    existing_user = db.query(User).filter(User.email == "test@example.com").first()
+    if existing_user:
+        db.delete(existing_user)
+        db.commit()
+    
     user = User(
         email="test@example.com",
         username="testuser",

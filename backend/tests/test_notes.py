@@ -11,6 +11,7 @@ def auth_headers(test_user):
         "username": "test@example.com",
         "password": "testpassword"
     })
+    assert response.status_code == 200, f"Login failed: {response.text}"
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
