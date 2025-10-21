@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext.tsx';
-import { useMutation, useQuery } from 'react-query';
+import { useMutation } from 'react-query';
 import { Save, User, Camera, Brain, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -13,10 +13,10 @@ interface SettingsForm {
 }
 
 export const SettingsPage: React.FC = () => {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SettingsForm>({
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<SettingsForm>({
     defaultValues: {
       full_name: user?.full_name || '',
       default_ocr_mode: user?.default_ocr_mode || 'traditional',
