@@ -5,11 +5,10 @@ import os
 
 from app.core.config import settings
 from app.api.api_v1.api import api_router
-from app.core.database import engine
-from app.models import models
+from app.core.database import engine, Base
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

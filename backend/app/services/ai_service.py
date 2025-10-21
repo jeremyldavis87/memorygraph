@@ -34,7 +34,7 @@ class AIService:
                 "entities": entities,
                 "action_items": action_items,
                 "tags": tags,
-                "metadata": {
+                "note_metadata": {
                     "ai_processed": True,
                     "processing_timestamp": note.created_at.isoformat()
                 }
@@ -179,7 +179,7 @@ class AIService:
             "entities": [],
             "action_items": [],
             "tags": [],
-            "metadata": {
+            "note_metadata": {
                 "ai_processed": False,
                 "processing_timestamp": note.created_at.isoformat()
             }
