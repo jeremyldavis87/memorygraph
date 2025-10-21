@@ -32,6 +32,8 @@ jest.mock('./contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children
 }));
 
+// Test configuration for GitHub Actions
+
 test('renders app without crashing', () => {
   render(<App />);
   // Basic test to ensure the app renders without errors
