@@ -2,6 +2,30 @@
 
 MemoryGraph is an AI-native knowledge management and personal assistant platform that captures information from any source, understands context through advanced AI processing, and maintains a knowledge graph of relationships and entities.
 
+## 🏗️ Development Setup
+
+For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd memorygraph
+
+# Run setup script
+./scripts/setup-local-dev.sh
+
+# Start development environment
+./start-dev.sh
+```
+
+### Multi-Environment Architecture
+
+- **Local Development**: Run on your machine with Docker services
+- **Dev Environment**: Deployed from `develop` branch to AWS
+- **Prod Environment**: Deployed from `main` branch to AWS
+
 ## 🚀 Features
 
 ### Phase 1: Rocketbook Capture Core (Current)
