@@ -1,3 +1,18 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Terraform files with sensitive data
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
+!terraform.tfvars.local
 # Python
 __pycache__/
 *.py[cod]
@@ -26,18 +41,10 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 .pnpm-debug.log*
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.production
-.env.development
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
@@ -53,15 +60,12 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
-# Docker
-# .dockerignore (we want to track this file)
-
 # Logs
-logs/
+logs
 *.log
 
 # Runtime data
-pids/
+pids
 *.pid
 *.seed
 *.pid.lock
@@ -87,7 +91,6 @@ jspm_packages/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
-
 # Optional REPL history
 .node_repl_history
 
@@ -122,6 +125,33 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Docker
+.dockerignore
 
 # Uploads
 uploads/

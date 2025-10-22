@@ -1,0 +1,250 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-west-2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: memorygraph_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Install Node.js dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run Python tests
+      run: |
+        cd backend
+        python -m pytest tests/ -v
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/memorygraph_test
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run Node.js tests
+      run: |
+        cd frontend
+        npm test -- --coverage --watchAll=false --passWithNoTests
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+  # Deploy to Dev Environment (from develop branch)
+  deploy-dev:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: dev
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push backend image
+      run: |
+        cd backend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-dev-backend
+
+    - name: Build and push frontend image
+      run: |
+        cd frontend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-dev-frontend
+
+    - name: Deploy to ECS (Dev)
+      run: |
+        aws ecs update-service \
+          --cluster memorygraph-dev-cluster \
+          --service memorygraph-dev-service \
+          --force-new-deployment
+
+  # Deploy to Prod Environment (from main branch)
+  deploy-prod:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: prod
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push backend image
+      run: |
+        cd backend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-prod-backend
+
+    - name: Build and push frontend image
+      run: |
+        cd frontend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-prod-frontend
+
+    - name: Deploy to ECS (Prod)
+      run: |
+        aws ecs update-service \
+          --cluster memorygraph-prod-cluster \
+          --service memorygraph-prod-service \
+          --force-new-deployment
+
+  # Infrastructure deployment jobs
+  deploy-infrastructure-dev:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: dev
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Terraform Init (Dev)
+      run: |
+        cd infrastructure/environments/dev
+        terraform init
+
+    - name: Terraform Plan (Dev)
+      run: |
+        cd infrastructure/environments/dev
+        terraform plan -var="database_password=${{ secrets.DATABASE_PASSWORD_DEV }}"
+
+    - name: Terraform Apply (Dev)
+      run: |
+        cd infrastructure/environments/dev
+        terraform apply -auto-approve -var="database_password=${{ secrets.DATABASE_PASSWORD_DEV }}"
+
+  deploy-infrastructure-prod:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: prod
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Terraform Init (Prod)
+      run: |
+        cd infrastructure/environments/prod
+        terraform init
+
+    - name: Terraform Plan (Prod)
+      run: |
+        cd infrastructure/environments/prod
+        terraform plan -var="database_password=${{ secrets.DATABASE_PASSWORD_PROD }}"
+
+    - name: Terraform Apply (Prod)
+      run: |
+        cd infrastructure/environments/prod
+        terraform apply -auto-approve -var="database_password=${{ secrets.DATABASE_PASSWORD_PROD }}"
