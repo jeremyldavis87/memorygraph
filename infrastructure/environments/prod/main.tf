@@ -11,7 +11,7 @@ terraform {
   backend "s3" {
     bucket = "memorygraph-terraform-state-prod"
     key    = "prod/terraform.tfstate"
-    region = "us-west-2"
+    region = "us-east-1"
   }
 }
 

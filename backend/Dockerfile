@@ -10,7 +10,13 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+    libgthread-2.0-0 \
+    libgtk-3-0 \
+    libavcodec58 \
+    libavformat58 \
+    libswscale5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /app
 
