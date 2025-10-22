@@ -7,7 +7,11 @@ on:
     branches: [ main ]
 
 env:
-  AWS_REGION: us-west-2
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: memorygraph
+  ECS_SERVICE: memorygraph-service
+  ECS_CLUSTER: memorygraph-cluster
+  ECS_TASK_DEFINITION: memorygraph-task
 
 jobs:
   test:

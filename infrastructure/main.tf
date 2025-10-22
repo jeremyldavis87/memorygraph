@@ -13,24 +13,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Variables
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-west-2"
-}
-
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "dev"
-}
-
-variable "project_name" {
-  description = "Project name"
-  type        = string
-  default     = "memorygraph"
-}
+# Variables are defined in variables.tf
 
 # VPC
 resource "aws_vpc" "main" {
@@ -200,7 +183,7 @@ resource "aws_db_instance" "main" {
   identifier = "${var.project_name}-db"
 
   engine         = "postgres"
-  engine_version = "15.4"
+  engine_version = "11.22-rds.20250814"
   instance_class = "db.t3.micro"
 
   allocated_storage     = 20
@@ -297,15 +280,15 @@ resource "aws_ecs_task_definition" "main" {
       secrets = [
         {
           name      = "SECRET_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/jwt-secret"
         },
         {
           name      = "OPENAI_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/openai-api-key"
         },
         {
           name      = "ANTHROPIC_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/anthropic-api-key"
         }
       ]
 
@@ -504,9 +487,9 @@ resource "aws_iam_policy" "secrets_manager_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key*",
-          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key*",
-          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret*"
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/openai-api-key*",
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/anthropic-api-key*",
+          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/jwt-secret*"
         ]
       }
     ]
