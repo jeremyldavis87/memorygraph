@@ -1,0 +1,5 @@
+# Graph services specific dependencies
+# Install these separately to avoid version conflicts with main backend
+langchain>=0.1.0
+langchain-openai>=0.0.2
+pydantic-ai>=0.0.8

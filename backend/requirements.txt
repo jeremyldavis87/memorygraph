@@ -21,7 +21,8 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 neo4j==5.15.0
-langchain>=0.1.0
-langchain-openai>=0.0.2
-pydantic-ai>=0.0.8
 email-validator>=2.1.0
+# Graph services dependencies - install separately to avoid conflicts
+# langchain>=0.1.0
+# langchain-openai>=0.0.2
+# pydantic-ai>=0.0.8
