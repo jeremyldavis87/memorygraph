@@ -8,13 +8,10 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libgomp1 \
     libgthread-2.0-0 \
     libgtk-3-0 \
-    libavcodec58 \
-    libavformat58 \
-    libswscale5 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
