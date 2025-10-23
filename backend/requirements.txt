@@ -3,7 +3,7 @@ uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 alembic==1.12.1
-pydantic==2.5.0
+pydantic[email]==2.5.0
 pydantic-settings==2.1.0
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
@@ -21,3 +21,7 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 neo4j==5.15.0
+langchain==0.1.0
+langchain-openai==0.0.2
+pydantic-ai==0.0.8
+email-validator==2.1.0
