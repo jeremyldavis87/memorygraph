@@ -16,6 +16,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     services:
       postgres:
@@ -99,10 +100,11 @@ jobs:
 
   # Deploy to Dev Environment (from develop branch)
   deploy-dev:
-    needs: test
+    needs: [test, deploy-infrastructure-dev]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     environment: dev
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v4
@@ -149,10 +151,11 @@ jobs:
 
   # Deploy to Prod Environment (from main branch)
   deploy-prod:
-    needs: test
+    needs: [test, deploy-infrastructure-prod]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: prod
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v4
@@ -202,6 +205,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment: dev
+    timeout-minutes: 15
+    continue-on-error: false
 
     steps:
     - uses: actions/checkout@v4
@@ -237,6 +242,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: prod
+    timeout-minutes: 15
+    continue-on-error: false
 
     steps:
     - uses: actions/checkout@v4
