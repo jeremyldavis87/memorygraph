@@ -202,6 +202,7 @@ jobs:
 
   # Infrastructure deployment jobs
   deploy-infrastructure-dev:
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment: dev
@@ -239,6 +240,7 @@ jobs:
         terraform apply -auto-approve -var="database_password=${{ secrets.DATABASE_PASSWORD_DEV }}"
 
   deploy-infrastructure-prod:
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: prod
