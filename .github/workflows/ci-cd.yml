@@ -145,8 +145,8 @@ jobs:
     - name: Deploy to ECS (Dev)
       run: |
         aws ecs update-service \
-          --cluster memorygraph-dev-cluster \
-          --service memorygraph-dev-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-service \
           --force-new-deployment
 
   # Deploy to Prod Environment (from main branch)
@@ -196,8 +196,8 @@ jobs:
     - name: Deploy to ECS (Prod)
       run: |
         aws ecs update-service \
-          --cluster memorygraph-prod-cluster \
-          --service memorygraph-prod-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-service \
           --force-new-deployment
 
   # Infrastructure deployment jobs
