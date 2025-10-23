@@ -27,3 +27,8 @@ output "nat_gateway_ids" {
   description = "IDs of the NAT Gateways"
   value       = aws_nat_gateway.main[*].id
 }
+
+output "secrets_manager_vpc_endpoint_id" {
+  description = "ID of the Secrets Manager VPC Endpoint"
+  value       = var.environment == "dev" ? aws_vpc_endpoint.secrets_manager[0].id : null
+}

@@ -151,3 +151,64 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = var.environment == "prod" ? aws_route_table.private[count.index].id : aws_route_table.private[0].id
 }
+
+# VPC Endpoint for Secrets Manager (for dev environment)
+resource "aws_vpc_endpoint" "secrets_manager" {
+  count = var.environment == "dev" ? 1 : 0
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
+  policy              = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-secrets-manager-endpoint"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Security Group for VPC Endpoints
+resource "aws_security_group" "vpc_endpoint" {
+  count = var.environment == "dev" ? 1 : 0
+
+  name_prefix = "${var.project_name}-${var.environment}-vpc-endpoint-"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-vpc-endpoint-sg"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Data source for current AWS region
+data "aws_region" "current" {}

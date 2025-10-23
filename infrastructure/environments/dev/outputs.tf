@@ -39,3 +39,8 @@ output "ecs_task_definition_family" {
   description = "ECS task definition family"
   value       = module.ecs.ecs_task_definition_family
 }
+
+output "secrets_manager_vpc_endpoint_id" {
+  description = "ID of the Secrets Manager VPC Endpoint"
+  value       = module.vpc.secrets_manager_vpc_endpoint_id
+}

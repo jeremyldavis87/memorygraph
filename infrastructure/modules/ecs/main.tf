@@ -85,15 +85,15 @@ resource "aws_ecs_task_definition" "main" {
       secrets = [
         {
           name      = "SECRET_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/jwt-secret"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret"
         },
         {
           name      = "OPENAI_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/openai-api-key"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key"
         },
         {
           name      = "ANTHROPIC_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/anthropic-api-key"
+          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key"
         }
       ]
 
