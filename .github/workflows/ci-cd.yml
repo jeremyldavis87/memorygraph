@@ -87,6 +87,15 @@ jobs:
         SECRET_KEY: test-secret-key-for-ci
         ALGORITHM: HS256
         ACCESS_TOKEN_EXPIRE_MINUTES: 30
+        NEO4J_URI: neo4j+s://ccdb15e5.databases.neo4j.io
+        NEO4J_USERNAME: neo4j
+        NEO4J_PASSWORD: JomXr6Xl1bPVwqogQvAANbOZMnzYB7n5GqM39AV8nok
+        NEO4J_DATABASE: neo4j
+        GRAPH_EXTRACTION_LLM_PROVIDER: openai
+        GRAPH_EXTRACTION_MODEL: gpt-4o-nano
+        EXTRACTOR_SERVICE_URL: http://localhost:8002
+        INSERTER_SERVICE_URL: http://localhost:8003
+        RETRIEVER_SERVICE_URL: http://localhost:8004
 
     - name: Run Node.js tests
       run: |
@@ -142,12 +151,61 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: memorygraph-dev-frontend
 
+    - name: Build and push extractor service image
+      run: |
+        cd backend/graph-services/extractor-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-dev-extractor-service
+
+    - name: Build and push inserter service image
+      run: |
+        cd backend/graph-services/inserter-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-dev-inserter-service
+
+    - name: Build and push retriever service image
+      run: |
+        cd backend/graph-services/retriever-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-dev-retriever-service
+
     - name: Deploy to ECS (Dev)
       run: |
         aws ecs update-service \
           --cluster memorygraph-cluster \
           --service memorygraph-service \
           --force-new-deployment
+        
+        # Update graph services if they exist
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-extractor-service \
+          --force-new-deployment || echo "Extractor service not found, skipping"
+        
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-inserter-service \
+          --force-new-deployment || echo "Inserter service not found, skipping"
+        
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-retriever-service \
+          --force-new-deployment || echo "Retriever service not found, skipping"
 
   # Deploy to Prod Environment (from main branch)
   deploy-prod:
@@ -193,12 +251,61 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: memorygraph-prod-frontend
 
+    - name: Build and push extractor service image
+      run: |
+        cd backend/graph-services/extractor-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-prod-extractor-service
+
+    - name: Build and push inserter service image
+      run: |
+        cd backend/graph-services/inserter-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-prod-inserter-service
+
+    - name: Build and push retriever service image
+      run: |
+        cd backend/graph-services/retriever-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: memorygraph-prod-retriever-service
+
     - name: Deploy to ECS (Prod)
       run: |
         aws ecs update-service \
           --cluster memorygraph-cluster \
           --service memorygraph-service \
           --force-new-deployment
+        
+        # Update graph services if they exist
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-extractor-service \
+          --force-new-deployment || echo "Extractor service not found, skipping"
+        
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-inserter-service \
+          --force-new-deployment || echo "Inserter service not found, skipping"
+        
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-retriever-service \
+          --force-new-deployment || echo "Retriever service not found, skipping"
 
   # Infrastructure deployment jobs
   deploy-infrastructure-dev:

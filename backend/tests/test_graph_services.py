@@ -1,0 +1,346 @@
+import pytest
+import asyncio
+from unittest.mock import AsyncMock, patch
+from fastapi.testclient import TestClient
+from app.main import app
+from app.services.graph_client import graph_client, Triple
+
+client = TestClient(app)
+
+@pytest.fixture
+def auth_headers(test_user):
+    # Login to get token
+    response = client.post("/api/v1/auth/login", data={
+        "username": "test@example.com",
+        "password": "testpassword"
+    })
+    assert response.status_code == 200, f"Login failed: {response.text}"
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def mock_graph_services():
+    """Mock the graph services for testing"""
+    with patch('app.services.graph_client.graph_client') as mock_client:
+        # Mock extract_triples
+        mock_client.extract_triples = AsyncMock(return_value={
+            "triples": [
+                {
+                    "subject": "John Smith",
+                    "predicate": "WORKS_FOR",
+                    "object": "Acme Corp",
+                    "confidence": 0.9,
+                    "entity_type": "Person",
+                    "relationship_type": "WORKS_FOR",
+                    "properties": {}
+                },
+                {
+                    "subject": "Project Alpha",
+                    "predicate": "PART_OF_PROJECT",
+                    "object": "John Smith",
+                    "confidence": 0.8,
+                    "entity_type": "Project",
+                    "relationship_type": "PART_OF_PROJECT",
+                    "properties": {}
+                }
+            ],
+            "entities": [
+                {"name": "John Smith", "type": "Person", "confidence": 0.9},
+                {"name": "Acme Corp", "type": "Organization", "confidence": 0.9},
+                {"name": "Project Alpha", "type": "Project", "confidence": 0.8}
+            ],
+            "relationships": [
+                {"subject": "John Smith", "predicate": "WORKS_FOR", "object": "Acme Corp", "confidence": 0.9},
+                {"subject": "Project Alpha", "predicate": "PART_OF_PROJECT", "object": "John Smith", "confidence": 0.8}
+            ],
+            "processing_time": 1.5,
+            "model_used": "gpt-4o-nano"
+        })
+        
+        # Mock bulk_insert_triples
+        mock_client.bulk_insert_triples = AsyncMock(return_value={
+            "inserted_count": 2,
+            "merged_count": 0,
+            "errors": [],
+            "processing_time": 0.5
+        })
+        
+        # Mock get_graph_context
+        mock_client.get_graph_context = AsyncMock(return_value={
+            "entities": [
+                {"name": "John Smith", "type": "Person"},
+                {"name": "Acme Corp", "type": "Organization"},
+                {"name": "Project Alpha", "type": "Project"}
+            ],
+            "relationships": [
+                {"subject": "John Smith", "predicate": "WORKS_FOR", "object": "Acme Corp"},
+                {"subject": "Project Alpha", "predicate": "PART_OF_PROJECT", "object": "John Smith"}
+            ],
+            "context_summary": "Context includes: 1 Person: John Smith; 1 Organization: Acme Corp; 1 Project: Project Alpha; 2 relationships",
+            "query_time": 0.3
+        })
+        
+        # Mock get_graph_stats
+        mock_client.get_graph_stats = AsyncMock(return_value={
+            "total_nodes": 15,
+            "entity_count": 12,
+            "note_count": 3,
+            "total_relationships": 8,
+            "relationship_types": 5,
+            "entity_type_distribution": [
+                {"entity_type": "Person", "count": 5},
+                {"entity_type": "Organization", "count": 3},
+                {"entity_type": "Project", "count": 2}
+            ]
+        })
+        
+        # Mock health_check
+        mock_client.health_check = AsyncMock(return_value={
+            "extractor": {"status": "healthy", "service": "extractor", "neo4j": "connected"},
+            "inserter": {"status": "healthy", "service": "inserter", "neo4j": "connected"},
+            "retriever": {"status": "healthy", "service": "retriever", "neo4j": "connected"}
+        })
+        
+        yield mock_client
+
+def test_create_note_with_graph_processing(auth_headers, mock_graph_services):
+    """Test that note creation triggers graph processing"""
+    response = client.post("/api/v1/notes/", json={
+        "title": "Meeting Notes - Q4 Planning",
+        "content": "John Smith from Acme Corp discussed Project Alpha timeline. We need to finalize the budget by next week.",
+        "source_type": "rocketbook"
+    }, headers=auth_headers)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Meeting Notes - Q4 Planning"
+    assert data["content"] == "John Smith from Acme Corp discussed Project Alpha timeline. We need to finalize the budget by next week."
+
+def test_manual_graph_extraction(auth_headers, mock_graph_services):
+    """Test manual graph extraction endpoint"""
+    # Create a note first
+    create_response = client.post("/api/v1/notes/", json={
+        "title": "Client Meeting",
+        "content": "Sarah Johnson from TechCorp wants to discuss the new feature requirements for Project Beta.",
+        "source_type": "rocketbook"
+    }, headers=auth_headers)
+    
+    note_id = create_response.json()["id"]
+    
+    # Test manual graph extraction
+    response = client.post(f"/api/v1/notes/{note_id}/extract-graph", headers=auth_headers)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert "triples_extracted" in data
+    assert "triples_inserted" in data
+    assert "processing_time" in data
+    assert "model_used" in data
+    assert data["triples_extracted"] == 2
+    assert data["triples_inserted"] == 2
+
+def test_get_note_graph_context(auth_headers, mock_graph_services):
+    """Test getting graph context for a note"""
+    # Create a note first
+    create_response = client.post("/api/v1/notes/", json={
+        "title": "Team Standup",
+        "content": "Mike reported progress on the database migration. Lisa mentioned the UI changes are ready for review.",
+        "source_type": "rocketbook"
+    }, headers=auth_headers)
+    
+    note_id = create_response.json()["id"]
+    
+    # Test graph context retrieval
+    response = client.get(f"/api/v1/notes/{note_id}/graph-context?max_depth=2&limit=50", headers=auth_headers)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "note_id" in data
+    assert "note_title" in data
+    assert "context" in data
+    assert data["note_id"] == note_id
+    assert data["note_title"] == "Team Standup"
+    assert "entities" in data["context"]
+    assert "relationships" in data["context"]
+    assert "context_summary" in data["context"]
+
+def test_get_graph_stats(auth_headers, mock_graph_services):
+    """Test getting graph statistics"""
+    response = client.get("/api/v1/notes/graph/stats", headers=auth_headers)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_nodes" in data
+    assert "entity_count" in data
+    assert "note_count" in data
+    assert "total_relationships" in data
+    assert "relationship_types" in data
+    assert "entity_type_distribution" in data
+    assert data["total_nodes"] == 15
+    assert data["entity_count"] == 12
+    assert data["note_count"] == 3
+
+def test_get_graph_health(auth_headers, mock_graph_services):
+    """Test graph services health check"""
+    response = client.get("/api/v1/notes/graph/health")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "extractor" in data
+    assert "inserter" in data
+    assert "retriever" in data
+    assert data["extractor"]["status"] == "healthy"
+    assert data["inserter"]["status"] == "healthy"
+    assert data["retriever"]["status"] == "healthy"
+
+def test_graph_extraction_with_no_content(auth_headers, mock_graph_services):
+    """Test graph extraction with note that has no content"""
+    # Create a note with no content
+    create_response = client.post("/api/v1/notes/", json={
+        "title": "Empty Note",
+        "content": "",
+        "source_type": "rocketbook"
+    }, headers=auth_headers)
+    
+    note_id = create_response.json()["id"]
+    
+    # Test manual graph extraction should fail
+    response = client.post(f"/api/v1/notes/{note_id}/extract-graph", headers=auth_headers)
+    
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert "no content" in data["detail"].lower()
+
+def test_graph_context_with_nonexistent_note(auth_headers, mock_graph_services):
+    """Test graph context retrieval with non-existent note"""
+    response = client.get("/api/v1/notes/99999/graph-context", headers=auth_headers)
+    
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert "not found" in data["detail"].lower()
+
+def test_graph_extraction_error_handling(auth_headers):
+    """Test graph extraction error handling when services are down"""
+    with patch('app.services.graph_client.graph_client.extract_triples') as mock_extract:
+        mock_extract.side_effect = Exception("Service unavailable")
+        
+        # Create a note first
+        create_response = client.post("/api/v1/notes/", json={
+            "title": "Test Note",
+            "content": "This is a test note",
+            "source_type": "rocketbook"
+        }, headers=auth_headers)
+        
+        note_id = create_response.json()["id"]
+        
+        # Test manual graph extraction should handle error
+        response = client.post(f"/api/v1/notes/{note_id}/extract-graph", headers=auth_headers)
+        
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+        assert "extraction failed" in data["detail"].lower()
+
+def test_graph_context_error_handling(auth_headers):
+    """Test graph context error handling when services are down"""
+    with patch('app.services.graph_client.graph_client.get_graph_context') as mock_context:
+        mock_context.side_effect = Exception("Service unavailable")
+        
+        # Create a note first
+        create_response = client.post("/api/v1/notes/", json={
+            "title": "Test Note",
+            "content": "This is a test note",
+            "source_type": "rocketbook"
+        }, headers=auth_headers)
+        
+        note_id = create_response.json()["id"]
+        
+        # Test graph context retrieval should handle error
+        response = client.get(f"/api/v1/notes/{note_id}/graph-context", headers=auth_headers)
+        
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+        assert "context retrieval failed" in data["detail"].lower()
+
+def test_graph_stats_error_handling(auth_headers):
+    """Test graph stats error handling when services are down"""
+    with patch('app.services.graph_client.graph_client.get_graph_stats') as mock_stats:
+        mock_stats.side_effect = Exception("Service unavailable")
+        
+        response = client.get("/api/v1/notes/graph/stats", headers=auth_headers)
+        
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+        assert "stats retrieval failed" in data["detail"].lower()
+
+def test_graph_health_error_handling():
+    """Test graph health check error handling when services are down"""
+    with patch('app.services.graph_client.graph_client.health_check') as mock_health:
+        mock_health.side_effect = Exception("Service unavailable")
+        
+        response = client.get("/api/v1/notes/graph/health")
+        
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+        assert "health check failed" in data["detail"].lower()
+
+# Test the graph client directly
+def test_graph_client_triple_creation():
+    """Test Triple object creation"""
+    triple = Triple(
+        subject="John Smith",
+        predicate="WORKS_FOR",
+        object="Acme Corp",
+        confidence=0.9,
+        entity_type="Person",
+        relationship_type="WORKS_FOR",
+        properties={"role": "Developer"}
+    )
+    
+    assert triple.subject == "John Smith"
+    assert triple.predicate == "WORKS_FOR"
+    assert triple.object == "Acme Corp"
+    assert triple.confidence == 0.9
+    assert triple.entity_type == "Person"
+    assert triple.relationship_type == "WORKS_FOR"
+    assert triple.properties == {"role": "Developer"}
+
+def test_graph_client_triple_validation():
+    """Test Triple object validation"""
+    # Test valid confidence range
+    triple = Triple(
+        subject="Test",
+        predicate="RELATES_TO",
+        object="Test Object",
+        confidence=0.5,
+        entity_type="Concept",
+        relationship_type="RELATES_TO"
+    )
+    assert triple.confidence == 0.5
+    
+    # Test confidence bounds
+    with pytest.raises(ValueError):
+        Triple(
+            subject="Test",
+            predicate="RELATES_TO",
+            object="Test Object",
+            confidence=1.5,  # Invalid: > 1.0
+            entity_type="Concept",
+            relationship_type="RELATES_TO"
+        )
+    
+    with pytest.raises(ValueError):
+        Triple(
+            subject="Test",
+            predicate="RELATES_TO",
+            object="Test Object",
+            confidence=-0.1,  # Invalid: < 0.0
+            entity_type="Concept",
+            relationship_type="RELATES_TO"
+        )
