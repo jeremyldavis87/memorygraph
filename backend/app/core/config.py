@@ -33,6 +33,21 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     
+    # Neo4j Configuration
+    NEO4J_URI: str = os.getenv("NEO4J_URI", "neo4j://localhost:7687")
+    NEO4J_USERNAME: str = os.getenv("NEO4J_USERNAME", "neo4j")
+    NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "password")
+    NEO4J_DATABASE: str = os.getenv("NEO4J_DATABASE", "neo4j")
+    AURA_INSTANCEID: Optional[str] = os.getenv("AURA_INSTANCEID")
+    AURA_INSTANCENAME: Optional[str] = os.getenv("AURA_INSTANCENAME")
+    
+    # Graph Services Configuration
+    GRAPH_EXTRACTION_LLM_PROVIDER: str = os.getenv("GRAPH_EXTRACTION_LLM_PROVIDER", "openai")
+    GRAPH_EXTRACTION_MODEL: str = os.getenv("GRAPH_EXTRACTION_MODEL", "gpt-4o-nano")
+    EXTRACTOR_SERVICE_URL: str = os.getenv("EXTRACTOR_SERVICE_URL", "http://localhost:8002")
+    INSERTER_SERVICE_URL: str = os.getenv("INSERTER_SERVICE_URL", "http://localhost:8003")
+    RETRIEVER_SERVICE_URL: str = os.getenv("RETRIEVER_SERVICE_URL", "http://localhost:8004")
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
