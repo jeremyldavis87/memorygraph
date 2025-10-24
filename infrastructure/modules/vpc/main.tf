@@ -183,59 +183,9 @@ resource "aws_vpc_endpoint" "secrets_manager" {
   }
 }
 
-# VPC Endpoint for ECR API (for dev environment)
-resource "aws_vpc_endpoint" "ecr_api" {
-  count = var.environment == "dev" ? 1 : 0
-
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
-  private_dns_enabled = true
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-ecr-api-endpoint"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# VPC Endpoint for ECR DKR (for dev environment)
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  count = var.environment == "dev" ? 1 : 0
-
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
-  private_dns_enabled = true
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-ecr-dkr-endpoint"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# VPC Endpoint for CloudWatch Logs (for dev environment)
-resource "aws_vpc_endpoint" "logs" {
-  count = var.environment == "dev" ? 1 : 0
-
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
-  private_dns_enabled = true
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-logs-endpoint"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
+# Note: VPC endpoints for ECR API, ECR DKR, and CloudWatch Logs already exist
+# and were created manually during troubleshooting. They are working correctly
+# with private DNS enabled, so we don't need to create them via Terraform.
 
 # Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoint" {
