@@ -32,3 +32,14 @@ output "execution_role_arn" {
   description = "ARN of the ECS execution role"
   value       = aws_iam_role.ecs_execution_role.arn
 }
+
+# Frontend outputs
+output "frontend_service_name" {
+  description = "Name of the frontend ECS service"
+  value       = aws_ecs_service.frontend.name
+}
+
+output "frontend_task_definition_arn" {
+  description = "ARN of the frontend ECS task definition"
+  value       = aws_ecs_task_definition.frontend.arn
+}

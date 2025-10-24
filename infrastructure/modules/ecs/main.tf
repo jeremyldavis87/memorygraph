@@ -124,9 +124,9 @@ resource "aws_ecs_service" "main" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = var.public_subnet_ids
     security_groups  = [var.ecs_tasks_security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -144,6 +144,77 @@ resource "aws_ecs_service" "main" {
   }
 }
 
+# Frontend ECS Task Definition
+resource "aws_ecs_task_definition" "frontend" {
+  family                   = "${var.project_name}-${var.environment}-frontend-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.frontend_task_cpu
+  memory                   = var.frontend_task_memory
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "frontend"
+      image = "${var.frontend_ecr_repository_url}:latest"
+      
+      portMappings = [
+        {
+          containerPort = 3000
+          protocol      = "tcp"
+        }
+      ]
+
+      essential = true
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.frontend.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-frontend-task"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Frontend ECS Service
+resource "aws_ecs_service" "frontend" {
+  name            = "${var.project_name}-${var.environment}-frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = var.frontend_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.public_subnet_ids
+    security_groups  = [var.ecs_tasks_security_group_id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.frontend_target_group_arn
+    container_name   = "frontend"
+    container_port   = 3000
+  }
+
+  depends_on = [var.alb_listener_arn]
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-frontend-service"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "main" {
   name              = "/ecs/${var.project_name}-${var.environment}"
@@ -151,6 +222,18 @@ resource "aws_cloudwatch_log_group" "main" {
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-logs"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Frontend CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "frontend" {
+  name              = "/ecs/${var.project_name}-${var.environment}-frontend"
+  retention_in_days = var.log_retention_days
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-frontend-logs"
     Environment = var.environment
     Project     = var.project_name
   }
