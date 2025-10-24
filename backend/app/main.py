@@ -7,8 +7,9 @@ from app.core.config import settings
 from app.api.api_v1.api import api_router
 from app.core.database import engine, Base
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables only if not in test environment
+if not os.getenv("TESTING"):
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
