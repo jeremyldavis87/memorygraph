@@ -107,3 +107,36 @@ module "ecs" {
   desired_count    = 1
   log_retention_days = 3
 }
+
+# Graph Services Module
+module "graph_services" {
+  source = "../../modules/graph-services"
+
+  project_name                = local.project_name
+  environment                 = local.environment
+  aws_region                  = var.aws_region
+  vpc_id                      = module.vpc.vpc_id
+  private_subnet_ids          = module.vpc.private_subnet_ids
+  ecs_cluster_id              = module.ecs.cluster_id
+  ecs_execution_role_arn      = module.ecs.execution_role_arn
+  alb_security_group_id       = module.security.alb_security_group_id
+  redis_security_group_id     = module.security.redis_security_group_id
+  alb_listener_arn            = module.alb.listener_arn
+
+  # Dev-specific settings
+  extractor_cpu              = "256"
+  extractor_memory           = "512"
+  extractor_desired_count    = 0  # Disabled for dev
+  inserter_cpu               = "256"
+  inserter_memory            = "512"
+  inserter_desired_count     = 0  # Disabled for dev
+  retriever_cpu              = "256"
+  retriever_memory           = "512"
+  retriever_desired_count    = 0  # Disabled for dev
+  log_retention_days         = 3
+
+  # Target groups (using main ALB target group for now)
+  extractor_target_group_arn = module.alb.target_group_arn
+  inserter_target_group_arn  = module.alb.target_group_arn
+  retriever_target_group_arn = module.alb.target_group_arn
+}

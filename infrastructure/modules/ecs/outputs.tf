@@ -1,3 +1,8 @@
+output "cluster_id" {
+  description = "ID of the ECS cluster"
+  value       = aws_ecs_cluster.main.id
+}
+
 output "ecs_cluster_id" {
   description = "ID of the ECS cluster"
   value       = aws_ecs_cluster.main.id
@@ -21,4 +26,9 @@ output "ecs_task_definition_arn" {
 output "ecs_task_definition_family" {
   description = "Family of the ECS task definition"
   value       = aws_ecs_task_definition.main.family
+}
+
+output "execution_role_arn" {
+  description = "ARN of the ECS execution role"
+  value       = aws_iam_role.ecs_execution_role.arn
 }
