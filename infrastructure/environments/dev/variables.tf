@@ -9,3 +9,15 @@ variable "database_password" {
   type        = string
   sensitive   = true
 }
+
+variable "certificate_arn" {
+  description = "ARN of the SSL certificate for HTTPS (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "domain_name" {
+  description = "Domain name for the ALB (optional)"
+  type        = string
+  default     = ""
+}

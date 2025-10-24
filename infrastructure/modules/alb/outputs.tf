@@ -8,12 +8,27 @@ output "alb_zone_id" {
   value       = aws_lb.main.zone_id
 }
 
+output "backend_target_group_arn" {
+  description = "ARN of the backend target group"
+  value       = aws_lb_target_group.backend.arn
+}
+
+output "frontend_target_group_arn" {
+  description = "ARN of the frontend target group"
+  value       = aws_lb_target_group.frontend.arn
+}
+
 output "target_group_arn" {
-  description = "ARN of the target group"
-  value       = aws_lb_target_group.main.arn
+  description = "ARN of the backend target group (for backward compatibility)"
+  value       = aws_lb_target_group.backend.arn
 }
 
 output "listener_arn" {
-  description = "ARN of the load balancer listener"
-  value       = aws_lb_listener.main.arn
+  description = "ARN of the HTTP listener"
+  value       = aws_lb_listener.http.arn
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = aws_lb.main.arn
 }

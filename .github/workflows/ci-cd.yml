@@ -146,7 +146,7 @@ jobs:
     - name: Build and push frontend image
       run: |
         cd frontend
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker build --build-arg REACT_APP_API_URL=/api/v1 -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
@@ -189,10 +189,17 @@ jobs:
 
     - name: Deploy to ECS (Dev)
       run: |
+        # Update backend service
         aws ecs update-service \
           --cluster memorygraph-dev-cluster \
           --service memorygraph-dev-service \
           --force-new-deployment
+        
+        # Update frontend service
+        aws ecs update-service \
+          --cluster memorygraph-dev-cluster \
+          --service memorygraph-dev-frontend-service \
+          --force-new-deployment || echo "Frontend service not found, skipping"
         
         # Update graph services if they exist
         aws ecs update-service \
@@ -246,7 +253,7 @@ jobs:
     - name: Build and push frontend image
       run: |
         cd frontend
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+        docker build --build-arg REACT_APP_API_URL=/api/v1 -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
@@ -289,10 +296,17 @@ jobs:
 
     - name: Deploy to ECS (Prod)
       run: |
+        # Update backend service
         aws ecs update-service \
           --cluster memorygraph-cluster \
           --service memorygraph-service \
           --force-new-deployment
+        
+        # Update frontend service
+        aws ecs update-service \
+          --cluster memorygraph-cluster \
+          --service memorygraph-frontend-service \
+          --force-new-deployment || echo "Frontend service not found, skipping"
         
         # Update graph services if they exist
         aws ecs update-service \

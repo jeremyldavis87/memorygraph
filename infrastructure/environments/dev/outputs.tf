@@ -1,46 +1,24 @@
 output "alb_dns_name" {
-  description = "DNS name of the load balancer"
+  description = "DNS name of the Application Load Balancer"
   value       = module.alb.alb_dns_name
 }
 
-output "rds_endpoint" {
-  description = "RDS instance endpoint"
-  value       = module.database.rds_endpoint
-  sensitive   = true
+output "alb_zone_id" {
+  description = "Zone ID of the Application Load Balancer"
+  value       = module.alb.alb_zone_id
 }
 
-output "redis_endpoint" {
-  description = "Redis cluster endpoint"
-  value       = module.database.redis_endpoint
-  sensitive   = true
+output "frontend_service_name" {
+  description = "Name of the frontend ECS service"
+  value       = module.frontend_ecs.frontend_service_name
 }
 
-output "backend_ecr_repository_url" {
-  description = "Backend ECR repository URL"
-  value       = module.ecr.backend_ecr_repository_url
-}
-
-output "frontend_ecr_repository_url" {
-  description = "Frontend ECR repository URL"
-  value       = module.ecr.frontend_ecr_repository_url
-}
-
-output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = module.ecs.ecs_cluster_name
-}
-
-output "ecs_service_name" {
-  description = "ECS service name"
+output "backend_service_name" {
+  description = "Name of the backend ECS service"
   value       = module.ecs.ecs_service_name
 }
 
-output "ecs_task_definition_family" {
-  description = "ECS task definition family"
-  value       = module.ecs.ecs_task_definition_family
-}
-
-output "secrets_manager_vpc_endpoint_id" {
-  description = "ID of the Secrets Manager VPC Endpoint"
-  value       = module.vpc.secrets_manager_vpc_endpoint_id
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  value       = module.ecs.ecs_cluster_name
 }

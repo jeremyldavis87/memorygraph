@@ -82,6 +82,8 @@ module "alb" {
   vpc_id                = module.vpc.vpc_id
   public_subnet_ids     = module.vpc.public_subnet_ids
   alb_security_group_id = module.security.alb_security_group_id
+  certificate_arn       = var.certificate_arn
+  domain_name           = var.domain_name
 }
 
 # ECS Module
@@ -93,13 +95,36 @@ module "ecs" {
   aws_region                  = var.aws_region
   private_subnet_ids          = module.vpc.private_subnet_ids
   ecs_tasks_security_group_id = module.security.ecs_tasks_security_group_id
-  target_group_arn            = module.alb.target_group_arn
+  target_group_arn            = module.alb.backend_target_group_arn
   alb_listener_arn            = module.alb.listener_arn
   backend_ecr_repository_url  = module.ecr.backend_ecr_repository_url
   database_endpoint           = module.database.rds_endpoint
   database_username           = "memorygraph"
   database_password           = var.database_password
   redis_endpoint              = module.database.redis_endpoint
+
+  # Dev-specific settings
+  task_cpu         = "256"
+  task_memory      = "512"
+  desired_count    = 1
+  log_retention_days = 3
+}
+
+# Frontend ECS Module
+module "frontend_ecs" {
+  source = "../../modules/frontend-ecs"
+
+  project_name                = local.project_name
+  environment                 = local.environment
+  aws_region                  = var.aws_region
+  ecs_cluster_id              = module.ecs.cluster_id
+  private_subnet_ids          = module.vpc.private_subnet_ids
+  ecs_tasks_security_group_id = module.security.ecs_tasks_security_group_id
+  frontend_target_group_arn   = module.alb.frontend_target_group_arn
+  alb_listener_arn            = module.alb.listener_arn
+  frontend_ecr_repository_url = module.ecr.frontend_ecr_repository_url
+  ecs_execution_role_arn      = module.ecs.execution_role_arn
+  ecs_task_role_arn           = module.ecs.execution_role_arn
 
   # Dev-specific settings
   task_cpu         = "256"
