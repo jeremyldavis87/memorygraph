@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: us-west-2
   ECR_REPOSITORY: memorygraph
   ECS_SERVICE: memorygraph-service
   ECS_CLUSTER: memorygraph-cluster

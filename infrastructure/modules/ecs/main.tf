@@ -85,15 +85,15 @@ resource "aws_ecs_task_definition" "main" {
       secrets = [
         {
           name      = "SECRET_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/jwt-secret"
+          valueFrom = data.aws_secretsmanager_secret.jwt_secret.arn
         },
         {
           name      = "OPENAI_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/openai-api-key"
+          valueFrom = data.aws_secretsmanager_secret.openai_api_key.arn
         },
         {
           name      = "ANTHROPIC_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/anthropic-api-key"
+          valueFrom = data.aws_secretsmanager_secret.anthropic_api_key.arn
         }
       ]
 
@@ -223,7 +223,9 @@ resource "aws_iam_policy" "secrets_manager_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:memorygraph/${var.environment}/*"
+          data.aws_secretsmanager_secret.jwt_secret.arn,
+          data.aws_secretsmanager_secret.openai_api_key.arn,
+          data.aws_secretsmanager_secret.anthropic_api_key.arn
         ]
       }
     ]
@@ -236,11 +238,24 @@ resource "aws_iam_policy" "secrets_manager_policy" {
   }
 }
 
-# Attach the secrets manager policy to the ECS task role
-resource "aws_iam_role_policy_attachment" "ecs_task_secrets_policy" {
-  role       = aws_iam_role.ecs_task_role.name
+# Attach the secrets manager policy to the ECS execution role
+resource "aws_iam_role_policy_attachment" "ecs_execution_secrets_policy" {
+  role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.secrets_manager_policy.arn
 }
 
 # Data source for current AWS account ID
 data "aws_caller_identity" "current" {}
+
+# Data sources for Secrets Manager secrets
+data "aws_secretsmanager_secret" "jwt_secret" {
+  name = "memorygraph/jwt-secret"
+}
+
+data "aws_secretsmanager_secret" "openai_api_key" {
+  name = "memorygraph/openai-api-key"
+}
+
+data "aws_secretsmanager_secret" "anthropic_api_key" {
+  name = "memorygraph/anthropic-api-key"
+}

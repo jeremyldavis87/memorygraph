@@ -156,12 +156,13 @@ resource "aws_route_table_association" "private" {
 resource "aws_vpc_endpoint" "secrets_manager" {
   count = var.environment == "dev" ? 1 : 0
 
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
-  policy              = jsonencode({
+  vpc_id                = aws_vpc.main.id
+  service_name          = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
+  vpc_endpoint_type     = "Interface"
+  subnet_ids            = aws_subnet.private[*].id
+  security_group_ids    = [aws_security_group.vpc_endpoint[0].id]
+  private_dns_enabled   = true
+  policy                = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -177,6 +178,60 @@ resource "aws_vpc_endpoint" "secrets_manager" {
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-secrets-manager-endpoint"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# VPC Endpoint for ECR API (for dev environment)
+resource "aws_vpc_endpoint" "ecr_api" {
+  count = var.environment == "dev" ? 1 : 0
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
+  private_dns_enabled = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ecr-api-endpoint"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# VPC Endpoint for ECR DKR (for dev environment)
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  count = var.environment == "dev" ? 1 : 0
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
+  private_dns_enabled = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ecr-dkr-endpoint"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# VPC Endpoint for CloudWatch Logs (for dev environment)
+resource "aws_vpc_endpoint" "logs" {
+  count = var.environment == "dev" ? 1 : 0
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
+  private_dns_enabled = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-logs-endpoint"
     Environment = var.environment
     Project     = var.project_name
   }
