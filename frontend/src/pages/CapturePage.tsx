@@ -23,7 +23,21 @@ export const CapturePage: React.FC = () => {
       setSelectedCategory(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Upload failed');
+      // Handle different error response formats
+      let errorMessage = 'Upload failed';
+      
+      if (error.response?.data?.detail) {
+        // If detail is an array (Pydantic validation errors), extract messages
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail.map((err: any) => err.msg).join(', ');
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     },
   });
 
