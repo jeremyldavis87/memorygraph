@@ -232,6 +232,10 @@ resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.project_name}-${var.environment}-frontend"
   retention_in_days = var.log_retention_days
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-frontend-logs"
     Environment = var.environment
