@@ -211,6 +211,21 @@ def upload_note(
     ocr_service = OCRService()
     ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
     
+    # Check for QR code mapping
+    final_category_id = category_id
+    qr_code = ocr_result.get("qr_code")
+    
+    if qr_code:
+        # Check if QR code has a mapping
+        from app.models.category import QRCode
+        qr_mapping = db.query(QRCode).filter(
+            QRCode.code == qr_code,
+            QRCode.user_id == current_user.id
+        ).first()
+        
+        if qr_mapping:
+            final_category_id = qr_mapping.category_id
+    
     # Create note
     note = Note(
         user_id=current_user.id,
@@ -218,12 +233,17 @@ def upload_note(
         content=ocr_result.get("content", ""),
         original_text=ocr_result.get("original_text", ""),
         source_type="rocketbook",
-        category_id=category_id,
+        category_id=final_category_id,
         file_path=file_path,
         image_path=file_path,
         ocr_mode=ocr_mode,
         ocr_confidence=ocr_result.get("confidence", 0),
-        processing_status="completed"
+        processing_status="completed",
+        note_metadata_json={
+            "sections": ocr_result.get("sections", []),
+            "qr_code": qr_code,
+            "qr_code_mapped": qr_code is not None and final_category_id != category_id
+        }
     )
     
     db.add(note)

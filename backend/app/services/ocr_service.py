@@ -2,8 +2,9 @@ import cv2
 import pytesseract
 from PIL import Image
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import re
+from pyzbar import pyzbar
 
 class OCRService:
     def __init__(self):
@@ -18,6 +19,9 @@ class OCRService:
         image = cv2.imread(image_path)
         processed_image = self._preprocess_image(image)
         
+        # Detect QR code first
+        qr_code = self._detect_qr_code(image)
+        
         # Extract text using Tesseract
         text = pytesseract.image_to_string(processed_image, config=self.tesseract_config)
         
@@ -26,8 +30,11 @@ class OCRService:
         confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
         avg_confidence = sum(confidences) / len(confidences) if confidences else 0
         
-        # Extract title
+        # Extract title with ## pattern support
         title = self._extract_title(text)
+        
+        # Extract section headers
+        sections = self._extract_sections(text)
         
         # Extract tags
         tags = self._extract_tags(text)
@@ -39,6 +46,8 @@ class OCRService:
             "original_text": text.strip(),
             "content": text.strip(),
             "title": title,
+            "sections": sections,
+            "qr_code": qr_code,
             "confidence": int(avg_confidence),
             "tags": tags,
             "action_items": action_items
@@ -65,10 +74,36 @@ class OCRService:
         
         return cleaned
     
+    def _detect_qr_code(self, image) -> Optional[str]:
+        """
+        Detect and decode QR codes in the image
+        """
+        try:
+            # Convert OpenCV image to PIL Image for pyzbar
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(image_rgb)
+            
+            # Decode QR codes
+            decoded_objects = pyzbar.decode(pil_image)
+            
+            if decoded_objects:
+                # Return the first QR code found
+                return decoded_objects[0].data.decode('utf-8')
+        except Exception as e:
+            print(f"QR code detection error: {e}")
+        
+        return None
+    
     def _extract_title(self, text: str) -> str:
         """
-        Extract title from text using various patterns
+        Extract title from text using various patterns, prioritizing ##Title## format
         """
+        # Priority 1: Look for ##Title## pattern
+        hash_pattern = r'##([^#]+)##'
+        matches = re.findall(hash_pattern, text)
+        if matches:
+            return matches[0].strip()
+        
         lines = text.split('\n')
         
         for line in lines:
@@ -98,6 +133,14 @@ class OCRService:
                 return line
         
         return "Untitled"
+    
+    def _extract_sections(self, text: str) -> list:
+        """
+        Extract all ##...## patterns as section headers
+        """
+        hash_pattern = r'##([^#]+)##'
+        matches = re.findall(hash_pattern, text)
+        return [{"title": match.strip(), "type": "section"} for match in matches]
     
     def _extract_tags(self, text: str) -> list:
         """
