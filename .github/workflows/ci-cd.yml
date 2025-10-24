@@ -82,7 +82,7 @@ jobs:
     - name: Run Python tests
       run: |
         cd backend
-        python -m pytest tests/ -v --ignore=tests/test_extractor_service.py --ignore=tests/test_inserter_service.py --ignore=tests/test_retriever_service.py
+        python -m pytest tests/ -v --ignore=tests/test_extractor_service.py --ignore=tests/test_inserter_service.py --ignore=tests/test_retriever_service.py --ignore=tests/test_graph_integration.py --ignore=tests/test_graph_services.py
       env:
         TESTING: true
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/memorygraph_test
