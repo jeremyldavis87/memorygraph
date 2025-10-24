@@ -10,7 +10,7 @@ output "alb_zone_id" {
 
 output "frontend_service_name" {
   description = "Name of the frontend ECS service"
-  value       = module.frontend_ecs.frontend_service_name
+  value       = module.ecs.frontend_service_name
 }
 
 output "backend_service_name" {
