@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     libgomp1 \
     libgtk-3-0 \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
