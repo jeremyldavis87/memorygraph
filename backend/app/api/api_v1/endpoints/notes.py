@@ -13,49 +13,47 @@ from app.schemas.note import NoteCreate, NoteResponse, NoteUpdate, NoteListRespo
 from app.api.api_v1.endpoints.auth import get_current_user
 from app.services.ocr_service import OCRService
 from app.services.ai_service import AIService
-# Temporarily disabled for CI/CD compatibility
-# from app.services.graph_client import graph_client, Triple
+from app.services.graph_client import graph_client, Triple
 
 router = APIRouter()
 
-# Temporarily disabled for CI/CD compatibility
-# async def process_note_for_graph(note_id: int, content: str, title: str, user_id: int):
-#     """
-#     Background task to process note for knowledge graph.
-#     """
-#     try:
-#         # Extract triples from note content
-#         extraction_result = await graph_client.extract_triples(
-#             content=content,
-#             title=title,
-#             source_type="rocketbook",
-#             user_id=user_id
-#         )
-#         
-#         # Convert to Triple objects
-#         triples = [
-#             Triple(
-#                 subject=triple["subject"],
-#                 predicate=triple["predicate"],
-#                 object=triple["object"],
-#                 confidence=triple["confidence"],
-#                 entity_type=triple["entity_type"],
-#                 relationship_type=triple["relationship_type"],
-#                 properties=triple.get("properties", {})
-#             )
-#             for triple in extraction_result.triples
-#         ]
-#         
-#         # Insert triples into graph
-#         if triples:
-#             await graph_client.bulk_insert_triples(
-#                 triples=triples,
-#                 note_id=note_id,
-#                 user_id=user_id
-#             )
-#             
-#     except Exception as e:
-#         print(f"Graph processing failed for note {note_id}: {str(e)}")
+async def process_note_for_graph(note_id: int, content: str, title: str, user_id: int):
+    """
+    Background task to process note for knowledge graph.
+    """
+    try:
+        # Extract triples from note content
+        extraction_result = await graph_client.extract_triples(
+            content=content,
+            title=title,
+            source_type="rocketbook",
+            user_id=user_id
+        )
+        
+        # Convert to Triple objects
+        triples = [
+            Triple(
+                subject=triple["subject"],
+                predicate=triple["predicate"],
+                object=triple["object"],
+                confidence=triple["confidence"],
+                entity_type=triple["entity_type"],
+                relationship_type=triple["relationship_type"],
+                properties=triple.get("properties", {})
+            )
+            for triple in extraction_result.triples
+        ]
+        
+        # Insert triples into graph
+        if triples:
+            await graph_client.bulk_insert_triples(
+                triples=triples,
+                note_id=note_id,
+                user_id=user_id
+            )
+            
+    except Exception as e:
+        print(f"Graph processing failed for note {note_id}: {str(e)}")
 
 @router.post("/", response_model=NoteResponse)
 def create_note(
@@ -80,16 +78,15 @@ def create_note(
     db.commit()
     db.refresh(db_note)
     
-    # Temporarily disabled for CI/CD compatibility
-    # # Queue graph processing as background task
-    # if note.content:
-    #     background_tasks.add_task(
-    #         process_note_for_graph,
-    #         note_id=db_note.id,
-    #         content=note.content,
-    #         title=note.title,
-    #         user_id=current_user.id
-    #     )
+    # Queue graph processing as background task
+    if note.content:
+        background_tasks.add_task(
+            process_note_for_graph,
+            note_id=db_note.id,
+            content=note.content,
+            title=note.title,
+            user_id=current_user.id
+        )
     
     return db_note
 
@@ -226,12 +223,20 @@ def upload_note(
         if qr_mapping:
             final_category_id = qr_mapping.category_id
     
+    # Prepare content for hybrid storage
+    full_content = ocr_result.get("content", "")
+    full_original_text = ocr_result.get("original_text", "")
+    content_preview = full_content[:1000] if full_content else ""
+    original_text_preview = full_original_text[:1000] if full_original_text else ""
+    
     # Create note
     note = Note(
         user_id=current_user.id,
         title=ocr_result.get("title", "Untitled"),
-        content=ocr_result.get("content", ""),
-        original_text=ocr_result.get("original_text", ""),
+        content=content_preview,  # Store preview in PostgreSQL
+        original_text=original_text_preview,  # Store preview in PostgreSQL
+        content_preview=content_preview,
+        has_full_content_in_graph=True,  # Full content will be stored in Neo4j
         source_type="rocketbook",
         category_id=final_category_id,
         file_path=file_path,
@@ -242,7 +247,9 @@ def upload_note(
         note_metadata_json={
             "sections": ocr_result.get("sections", []),
             "qr_code": qr_code,
-            "qr_code_mapped": qr_code is not None and final_category_id != category_id
+            "qr_code_mapped": qr_code is not None and final_category_id != category_id,
+            "full_content": full_content,  # Store full content in metadata for now
+            "full_original_text": full_original_text
         }
     )
     
@@ -267,8 +274,7 @@ def upload_note(
     
     return note
 
-# Temporarily disabled for CI/CD compatibility
-# @router.post("/{note_id}/extract-graph")
+@router.post("/{note_id}/extract-graph")
 async def extract_graph_from_note(
     note_id: int,
     current_user: User = Depends(get_current_user),

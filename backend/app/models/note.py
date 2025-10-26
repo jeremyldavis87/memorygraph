@@ -15,6 +15,8 @@ class Note(Base):
     content = Column(Text)
     original_text = Column(Text)  # Raw OCR text
     summary = Column(Text)  # AI-generated summary
+    content_preview = Column(Text)  # First 1000 characters for quick access
+    has_full_content_in_graph = Column(Boolean, default=False)  # Flag indicating full content is in Neo4j
     
     # Metadata
     source_type = Column(String, default="rocketbook")  # rocketbook, audio, video, document, etc.

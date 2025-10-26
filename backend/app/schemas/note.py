@@ -28,6 +28,8 @@ class NoteResponse(NoteBase):
     user_id: int
     original_text: Optional[str]
     summary: Optional[str]
+    content_preview: Optional[str]
+    has_full_content_in_graph: bool
     file_path: Optional[str]
     image_path: Optional[str]
     ocr_mode: str
