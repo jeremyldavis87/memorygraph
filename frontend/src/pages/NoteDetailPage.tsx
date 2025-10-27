@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { ArrowLeft, Calendar, Tag, FileText, Image, Download } from 'lucide-react';
-import { notesService } from '../services/notesService.ts';
+import { notesService } from '../services/notesService';
 
 export const NoteDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

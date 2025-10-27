@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Search, FileText, User, Building, Calendar, Tag } from 'lucide-react';
-import { searchService } from '../services/searchService.ts';
+import { searchService } from '../services/searchService';
 
 export const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -89,7 +89,7 @@ export const SearchPage: React.FC = () => {
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Suggestions:</h4>
             <div className="flex flex-wrap gap-2">
-              {suggestions.suggestions.map((suggestion, index) => (
+              {suggestions.suggestions.map((suggestion: any, index: number) => (
                 <button
                   key={index}
                   onClick={() => setQuery(suggestion.text)}
@@ -125,7 +125,7 @@ export const SearchPage: React.FC = () => {
           </div>
         ) : searchType === 'notes' ? (
           searchResults?.length ? (
-            searchResults.map((note) => (
+            searchResults.map((note: any) => (
               <div key={note.id} className="card hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -147,10 +147,10 @@ export const SearchPage: React.FC = () => {
                         <Calendar className="h-3 w-3 mr-1" />
                         {new Date(note.created_at).toLocaleDateString()}
                       </div>
-                      {note.tags?.length > 0 && (
+                      {note.tags && note.tags.length > 0 && (
                         <div className="flex items-center">
                           <Tag className="h-3 w-3 mr-1" />
-                          {note.tags.length} tags
+                          {note.tags?.length} tags
                         </div>
                       )}
                     </div>
@@ -170,7 +170,7 @@ export const SearchPage: React.FC = () => {
         ) : (
           searchResults?.length ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {searchResults.map((entity) => {
+              {searchResults.map((entity: any) => {
                 const Icon = getEntityIcon(entity.entity_type);
                 return (
                   <div key={entity.id} className="card hover:shadow-md transition-shadow">

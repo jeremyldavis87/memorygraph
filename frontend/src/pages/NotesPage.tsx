@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { Search, FileText, Calendar, Tag, Eye } from 'lucide-react';
-import { notesService } from '../services/notesService.ts';
-import { categoriesService } from '../services/categoriesService.ts';
+import { notesService } from '../services/notesService';
+import { categoriesService } from '../services/categoriesService';
 
 export const NotesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,17 +121,17 @@ export const NotesPage: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    {note.tags?.length > 0 && (
+                    {note.tags && note.tags.length > 0 && (
                       <div className="flex items-center">
                         <Tag className="h-3 w-3 mr-1" />
-                        {note.tags.length} tags
+                        {note.tags?.length} tags
                       </div>
                     )}
-                    {note.action_items?.length > 0 && (
+                    {note.action_items && note.action_items.length > 0 && (
                       <div className="flex items-center">
                         <span className="mr-1">Actions:</span>
                         <span className="font-medium text-blue-600">
-                          {note.action_items.length}
+                          {note.action_items?.length}
                         </span>
                       </div>
                     )}

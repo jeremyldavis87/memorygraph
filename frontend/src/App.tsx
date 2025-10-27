@@ -3,17 +3,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 
-import { AuthProvider } from './contexts/AuthContext.tsx';
-import { ProtectedRoute } from './components/ProtectedRoute.tsx';
-import { Layout } from './components/Layout.tsx';
-import { LoginPage } from './pages/LoginPage.tsx';
-import { RegisterPage } from './pages/RegisterPage.tsx';
-import { DashboardPage } from './pages/DashboardPage.tsx';
-import { CapturePage } from './pages/CapturePage.tsx';
-import { NotesPage } from './pages/NotesPage.tsx';
-import { NoteDetailPage } from './pages/NoteDetailPage.tsx';
-import { SearchPage } from './pages/SearchPage.tsx';
-import { SettingsPage } from './pages/SettingsPage.tsx';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Layout } from './components/Layout';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { CapturePage } from './pages/CapturePage';
+import { NotesPage } from './pages/NotesPage';
+// import { NoteDetailPage } from './pages/NoteDetailPage.tsx';
+import { SearchPage } from './pages/SearchPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,7 +42,7 @@ function App() {
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/capture" element={<CapturePage />} />
                         <Route path="/notes" element={<NotesPage />} />
-                        <Route path="/notes/:id" element={<NoteDetailPage />} />
+                        {/* <Route path="/notes/:id" element={<NoteDetailPage />} /> */}
                         <Route path="/search" element={<SearchPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                       </Routes>

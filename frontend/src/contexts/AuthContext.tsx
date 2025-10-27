@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '../services/authService.ts';
+import { authService } from '../services/authService';
 
 interface User {
   id: number;
@@ -11,6 +11,9 @@ interface User {
   default_ocr_mode: string;
   auto_capture: boolean;
   ai_processing_enabled: boolean;
+  vision_model_preference?: string;
+  ocr_confidence_threshold?: number;
+  multi_note_detection_enabled?: boolean;
 }
 
 interface AuthContextType {

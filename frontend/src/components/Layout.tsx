@@ -10,7 +10,7 @@ import {
   Home,
   LogOut
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
