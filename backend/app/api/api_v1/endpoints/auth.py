@@ -108,12 +108,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
+            print(f"JWT payload missing 'sub' field: {payload}")
             raise credentials_exception
         token_data = TokenData(email=email)
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT decode error: {str(e)}")
         raise credentials_exception
     user = get_user_by_email(db, email=token_data.email)
     if user is None:
+        print(f"User not found for email: {token_data.email}")
         raise credentials_exception
     return user
 
