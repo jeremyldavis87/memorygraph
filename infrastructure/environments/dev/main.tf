@@ -117,6 +117,15 @@ module "ecs" {
 }
 
 
+# Secrets Manager Module
+module "secrets_manager" {
+  source = "../../modules/secrets-manager"
+
+  project_name         = local.project_name
+  environment          = local.environment
+  braintrust_api_key   = var.braintrust_api_key
+}
+
 # Graph Services Module
 module "graph_services" {
   source = "../../modules/graph-services"

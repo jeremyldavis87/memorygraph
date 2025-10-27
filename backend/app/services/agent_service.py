@@ -6,6 +6,7 @@ import numpy as np
 import os
 import uuid
 from datetime import datetime
+import braintrust
 
 from app.services.ocr_service import OCRService
 from app.services.ai_service import AIService
@@ -15,11 +16,19 @@ from app.core.config import settings
 class NoteProcessingAgent:
     def __init__(self, model_name: str = "gpt-4o-mini"):
         """
-        Initialize the note processing agent with pydantic-ai.
+        Initialize the note processing agent with pydantic-ai and Braintrust observability.
         """
         self.model_name = model_name
         self.ocr_service = OCRService()
         self.ai_service = AIService()
+        
+        # Initialize Braintrust if API key is available
+        self.braintrust_enabled = bool(settings.BRAINTRUST_API_KEY)
+        if self.braintrust_enabled:
+            braintrust.init(
+                api_key=settings.BRAINTRUST_API_KEY,
+                project="memorygraph-agent"
+            )
         
         # Initialize the agent
         self.agent = Agent(
@@ -69,6 +78,76 @@ class NoteProcessingAgent:
         Returns:
             List of processed note dictionaries
         """
+        # Start Braintrust logging if enabled
+        if self.braintrust_enabled:
+            with braintrust.traced(
+                name="process_multi_note_image",
+                inputs={
+                    "image_path": image_path,
+                    "config": config,
+                    "model_name": self.model_name
+                }
+            ) as span:
+                return self._process_with_braintrust(image_path, config, span)
+        else:
+            return self._process_without_braintrust(image_path, config)
+    
+    def _process_with_braintrust(self, image_path: str, config: Dict[str, Any], span) -> List[Dict[str, Any]]:
+        """Process with Braintrust observability."""
+        try:
+            # Load image
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError(f"Could not load image: {image_path}")
+            
+            # Get configuration
+            confidence_threshold = config.get("ocr_confidence_threshold", 90)
+            vision_model = config.get("vision_model_preference", "gpt-4o-mini")
+            
+            # Step 1: Detect note count and regions
+            note_regions = self._detect_note_regions(image, image_path, vision_model)
+            
+            span.log({
+                "note_regions_detected": len(note_regions),
+                "detection_methods": [r.get("detection_method") for r in note_regions]
+            })
+            
+            if not note_regions:
+                # Fallback to single note processing
+                span.log({"fallback_reason": "no_regions_detected"})
+                result = [self._process_single_note(image_path, config, detection_method="single_note")]
+                span.log({"output": {"notes_processed": len(result)}})
+                return result
+            
+            # Step 2: Process each note region
+            processed_notes = []
+            for i, region in enumerate(note_regions):
+                note_result = self._process_single_note_region(
+                    image, region, image_path, config, i + 1
+                )
+                processed_notes.append(note_result)
+                
+                # Log individual note processing
+                span.log({
+                    f"note_{i+1}": {
+                        "position": note_result.get("note_position"),
+                        "confidence": note_result.get("confidence"),
+                        "processing_method": note_result.get("processing_method"),
+                        "success": note_result.get("success", False)
+                    }
+                })
+            
+            span.log({"output": {"notes_processed": len(processed_notes)}})
+            return processed_notes
+            
+        except Exception as e:
+            span.log({"error": str(e)})
+            print(f"Error processing multi-note image: {e}")
+            # Fallback to single note processing
+            return [self._process_single_note(image_path, config, detection_method="error_fallback")]
+    
+    def _process_without_braintrust(self, image_path: str, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Process without Braintrust observability."""
         try:
             # Load image
             image = cv2.imread(image_path)
@@ -286,6 +365,126 @@ class NoteProcessingAgent:
         """
         Process a single note with OCR and optional vision LLM fallback.
         """
+        # Add Braintrust logging if enabled
+        if self.braintrust_enabled:
+            with braintrust.traced(
+                name="process_single_note",
+                inputs={
+                    "image_path": image_path,
+                    "detection_method": detection_method,
+                    "config": config
+                }
+            ) as span:
+                return self._process_single_note_with_braintrust(image_path, config, detection_method, span)
+        else:
+            return self._process_single_note_without_braintrust(image_path, config, detection_method)
+    
+    def _process_single_note_with_braintrust(self, image_path: str, config: Dict[str, Any], 
+                                            detection_method: str, span) -> Dict[str, Any]:
+        """Process single note with Braintrust observability."""
+        try:
+            # Get configuration
+            confidence_threshold = config.get("ocr_confidence_threshold", 90)
+            vision_model = config.get("vision_model_preference", "gpt-4o-mini")
+            
+            # Step 1: Try OCR first
+            ocr_result = self.ocr_service.process_image(image_path)
+            
+            # Calculate quality score
+            quality_score = self.ocr_service.calculate_ocr_quality_score(ocr_result)
+            
+            span.log({
+                "ocr_confidence": quality_score,
+                "confidence_threshold": confidence_threshold,
+                "ocr_text_length": len(ocr_result.get("content", "")),
+                "qr_code_detected": bool(ocr_result.get("qr_code"))
+            })
+            
+            # Step 2: Check if OCR quality is sufficient
+            if quality_score >= confidence_threshold:
+                # OCR is good enough
+                span.log({"processing_method": "ocr", "fallback_reason": "none"})
+                result = {
+                    "success": True,
+                    "content": ocr_result["content"],
+                    "original_text": ocr_result["original_text"],
+                    "title": ocr_result["title"],
+                    "sections": ocr_result["sections"],
+                    "action_items": ocr_result["action_items"],
+                    "tags": ocr_result["tags"],
+                    "confidence": quality_score,
+                    "processing_method": "ocr",
+                    "qr_code": ocr_result["qr_code"],
+                    "detection_method": detection_method
+                }
+                span.log({"output": result})
+                return result
+            else:
+                # OCR quality is insufficient, use vision LLM
+                span.log({"processing_method": "vision_llm", "fallback_reason": "low_ocr_confidence"})
+                
+                vision_result = self.ai_service.extract_text_from_note_region(
+                    image_path, 
+                    "Extract all text from this note, preserving formatting",
+                    vision_model
+                )
+                
+                span.log({
+                    "vision_llm_success": vision_result.get("success", False),
+                    "vision_model_used": vision_model
+                })
+                
+                if vision_result.get("success"):
+                    extracted_text = vision_result["extracted_text"]
+                    
+                    # Process the extracted text with existing OCR methods for structure
+                    title = self.ocr_service._extract_title(extracted_text)
+                    sections = self.ocr_service._extract_sections(extracted_text)
+                    action_items = self.ocr_service._extract_action_items(extracted_text)
+                    tags = self.ocr_service._extract_tags(extracted_text)
+                    
+                    result = {
+                        "success": True,
+                        "content": extracted_text,
+                        "original_text": extracted_text,
+                        "title": title,
+                        "sections": sections,
+                        "action_items": action_items,
+                        "tags": tags,
+                        "confidence": 95,  # High confidence for vision LLM
+                        "processing_method": "vision_llm",
+                        "qr_code": ocr_result["qr_code"],  # Still try to get QR code from original
+                        "detection_method": detection_method
+                    }
+                    span.log({"output": result})
+                    return result
+                else:
+                    # Vision LLM failed, return OCR result anyway
+                    span.log({"processing_method": "ocr_fallback", "fallback_reason": "vision_llm_failed"})
+                    result = {
+                        "success": True,
+                        "content": ocr_result["content"],
+                        "original_text": ocr_result["original_text"],
+                        "title": ocr_result["title"],
+                        "sections": ocr_result["sections"],
+                        "action_items": ocr_result["action_items"],
+                        "tags": ocr_result["tags"],
+                        "confidence": quality_score,
+                        "processing_method": "ocr_fallback",
+                        "qr_code": ocr_result["qr_code"],
+                        "detection_method": detection_method
+                    }
+                    span.log({"output": result})
+                    return result
+                    
+        except Exception as e:
+            span.log({"error": str(e)})
+            print(f"Error processing single note: {e}")
+            return self._create_error_note_result(1, str(e))
+    
+    def _process_single_note_without_braintrust(self, image_path: str, config: Dict[str, Any], 
+                                              detection_method: str) -> Dict[str, Any]:
+        """Process single note without Braintrust observability."""
         try:
             # Get configuration
             confidence_threshold = config.get("ocr_confidence_threshold", 90)

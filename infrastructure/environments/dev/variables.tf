@@ -21,3 +21,9 @@ variable "domain_name" {
   type        = string
   default     = ""
 }
+
+variable "braintrust_api_key" {
+  description = "Braintrust API key"
+  type        = string
+  sensitive   = true
+}

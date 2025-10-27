@@ -107,3 +107,12 @@ module "ecs" {
   desired_count    = 3
   log_retention_days = 30
 }
+
+# Secrets Manager Module
+module "secrets_manager" {
+  source = "../../modules/secrets-manager"
+
+  project_name         = local.project_name
+  environment          = local.environment
+  braintrust_api_key   = var.braintrust_api_key
+}

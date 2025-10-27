@@ -9,3 +9,9 @@ variable "database_password" {
   type        = string
   sensitive   = true
 }
+
+variable "braintrust_api_key" {
+  description = "Braintrust API key"
+  type        = string
+  sensitive   = true
+}

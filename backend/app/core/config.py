@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     # AI/ML
     OPENAI_API_KEY: Optional[str] = None
+    BRAINTRUST_API_KEY: Optional[str] = None
     OCR_MODE: str = "traditional"  # traditional, llm, or auto
     
     # File Storage
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
     
     # Graph Services Configuration
     GRAPH_EXTRACTION_LLM_PROVIDER: str = os.getenv("GRAPH_EXTRACTION_LLM_PROVIDER", "openai")
-    GRAPH_EXTRACTION_MODEL: str = os.getenv("GRAPH_EXTRACTION_MODEL", "gpt-4o-nano")
+    GRAPH_EXTRACTION_MODEL: str = os.getenv("GRAPH_EXTRACTION_MODEL", "gpt-5-mini")
     EXTRACTOR_SERVICE_URL: str = os.getenv("EXTRACTOR_SERVICE_URL", "http://localhost:8002")
     INSERTER_SERVICE_URL: str = os.getenv("INSERTER_SERVICE_URL", "http://localhost:8003")
     RETRIEVER_SERVICE_URL: str = os.getenv("RETRIEVER_SERVICE_URL", "http://localhost:8004")
