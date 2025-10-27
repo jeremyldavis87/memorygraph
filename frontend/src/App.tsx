@@ -11,7 +11,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CapturePage } from './pages/CapturePage';
 import { NotesPage } from './pages/NotesPage';
-// import { NoteDetailPage } from './pages/NoteDetailPage.tsx';
+import { NoteDetailPage } from './pages/NoteDetailPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -42,7 +42,7 @@ function App() {
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/capture" element={<CapturePage />} />
                         <Route path="/notes" element={<NotesPage />} />
-                        {/* <Route path="/notes/:id" element={<NoteDetailPage />} /> */}
+                        <Route path="/notes/:id" element={<NoteDetailPage />} />
                         <Route path="/search" element={<SearchPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                       </Routes>
