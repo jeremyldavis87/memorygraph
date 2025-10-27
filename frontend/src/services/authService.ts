@@ -46,4 +46,16 @@ export const authService = {
     const response = await api.get('/auth/me');
     return response.data;
   },
+
+  async updateSettings(settings: {
+    vision_model_preference?: string;
+    ocr_confidence_threshold?: number;
+    multi_note_detection_enabled?: boolean;
+    default_ocr_mode?: string;
+    auto_capture?: boolean;
+    ai_processing_enabled?: boolean;
+  }) {
+    const response = await api.put('/auth/me/settings', settings);
+    return response.data;
+  },
 };

@@ -2,6 +2,8 @@ import openai
 from typing import Dict, Any, List
 import json
 import re
+import base64
+import os
 from app.core.config import settings
 
 class AIService:
@@ -184,3 +186,135 @@ class AIService:
                 "processing_timestamp": note.created_at.isoformat()
             }
         }
+    
+    def process_with_vision_llm(self, image_path: str, prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+        """
+        Process image with vision LLM to extract text and structure.
+        """
+        if not settings.OPENAI_API_KEY:
+            return {"error": "OpenAI API key not configured"}
+        
+        try:
+            # Encode image to base64
+            with open(image_path, "rb") as image_file:
+                base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+            
+            # Prepare the message
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            # Call OpenAI Vision API
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                max_tokens=2000,
+                temperature=0.1
+            )
+            
+            return {
+                "success": True,
+                "text": response.choices[0].message.content.strip(),
+                "model_used": model
+            }
+            
+        except Exception as e:
+            print(f"Vision LLM processing failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def detect_note_regions_with_vision(self, image_path: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+        """
+        Use vision LLM to detect and describe note regions in a multi-note image.
+        """
+        prompt = """
+        Analyze this image and identify all individual notes. For each note you can see:
+        1. Count the total number of notes
+        2. Describe the layout (e.g., "3x3 grid", "2x4 layout", etc.)
+        3. For each note, provide:
+           - Position number (1-9 for 3x3 grid, or sequential numbering)
+           - Brief description of the content
+           - Whether it has a QR code
+           - Whether it has a title (look for ##Title## format or underlined text)
+           - Type of content (bullet points, numbered list, checkbox list, plain text, etc.)
+
+        Return your analysis as JSON in this format:
+        {
+            "total_notes": 9,
+            "layout": "3x3 grid",
+            "notes": [
+                {
+                    "position": 1,
+                    "description": "Brief description of content",
+                    "has_qr_code": true,
+                    "has_title": false,
+                    "content_type": "bullet_points"
+                }
+            ]
+        }
+        """
+        
+        result = self.process_with_vision_llm(image_path, prompt, model)
+        
+        if result.get("success"):
+            try:
+                # Try to parse the JSON response
+                analysis = json.loads(result["text"])
+                return {
+                    "success": True,
+                    "analysis": analysis,
+                    "model_used": model
+                }
+            except json.JSONDecodeError:
+                # If JSON parsing fails, return the raw text
+                return {
+                    "success": True,
+                    "raw_text": result["text"],
+                    "model_used": model
+                }
+        else:
+            return result
+    
+    def extract_text_from_note_region(self, image_path: str, region_description: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+        """
+        Extract text from a specific note region using vision LLM.
+        """
+        prompt = f"""
+        Extract all text from this note region. Pay special attention to:
+        1. Preserve the exact formatting (bullet points, numbered lists, checkboxes)
+        2. Look for titles marked with ##Title## format or underlined text
+        3. Identify action items with checkboxes (☐, ☑, [ ], [x])
+        4. Preserve special characters and symbols
+        5. Maintain line breaks and spacing
+
+        Note description: {region_description}
+
+        Return the extracted text exactly as written, preserving all formatting.
+        """
+        
+        result = self.process_with_vision_llm(image_path, prompt, model)
+        
+        if result.get("success"):
+            return {
+                "success": True,
+                "extracted_text": result["text"],
+                "model_used": model
+            }
+        else:
+            return result

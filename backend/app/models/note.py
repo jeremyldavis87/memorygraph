@@ -28,6 +28,11 @@ class Note(Base):
     ocr_confidence = Column(Integer)  # 0-100
     processing_status = Column(String, default="pending")  # pending, processing, completed, failed
     
+    # Multi-note detection
+    parent_note_id = Column(Integer, ForeignKey("notes.id"), nullable=True)  # For notes extracted from multi-note images
+    note_position = Column(Integer, nullable=True)  # Position in multi-note image
+    detection_method = Column(String, nullable=True)  # qr_code, contour, vision_llm
+    
     # AI Analysis
     entities = Column(JSON)  # Extracted entities
     action_items = Column(JSON)  # Extracted action items

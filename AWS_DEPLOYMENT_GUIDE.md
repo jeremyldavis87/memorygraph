@@ -92,7 +92,7 @@ aws ecs update-service \
 
 ### Key Configuration Values
 - **AWS Account**: 969325212479
-- **Region**: us-west-2
+- **Region**: us-east-1
 - **Database**: PostgreSQL 15.4 on RDS
 - **Cache**: Redis on ElastiCache
 - **Compute**: ECS Fargate

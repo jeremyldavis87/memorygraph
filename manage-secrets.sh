@@ -7,7 +7,7 @@ set -e
 
 # Set AWS profile
 export AWS_PROFILE=jeremy_personal_local
-export AWS_REGION=us-west-2
+export AWS_REGION=us-east-1
 
 # Function to display usage
 usage() {

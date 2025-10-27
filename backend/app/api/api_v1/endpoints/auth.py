@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, TokenData
+from app.schemas.user import UserCreate, UserResponse, Token, TokenData, UserSettingsUpdate
 
 router = APIRouter()
 
@@ -119,4 +119,39 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 @router.get("/me", response_model=UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.put("/me/settings", response_model=UserResponse)
+def update_user_settings(
+    settings_update: UserSettingsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user settings including vision model preferences and OCR settings.
+    """
+    # Validate vision model preference
+    if settings_update.vision_model_preference:
+        valid_models = ["gpt-4o-mini", "gpt-4o", "gpt-4-vision-preview"]
+        if settings_update.vision_model_preference not in valid_models:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid vision model. Must be one of: {', '.join(valid_models)}"
+            )
+    
+    # Validate OCR confidence threshold
+    if settings_update.ocr_confidence_threshold is not None:
+        if not (0 <= settings_update.ocr_confidence_threshold <= 100):
+            raise HTTPException(
+                status_code=400,
+                detail="OCR confidence threshold must be between 0 and 100"
+            )
+    
+    # Update user settings
+    update_data = settings_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+    
+    db.commit()
+    db.refresh(current_user)
     return current_user

@@ -2,14 +2,18 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useMutation } from 'react-query';
-import { Save, User, Camera, Brain, Shield } from 'lucide-react';
+import { Save, User, Camera, Brain, Shield, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { authService } from '../services/authService';
 
 interface SettingsForm {
   full_name?: string;
   default_ocr_mode: string;
   auto_capture: boolean;
   ai_processing_enabled: boolean;
+  vision_model_preference: string;
+  ocr_confidence_threshold: number;
+  multi_note_detection_enabled: boolean;
 }
 
 export const SettingsPage: React.FC = () => {
@@ -22,14 +26,22 @@ export const SettingsPage: React.FC = () => {
       default_ocr_mode: user?.default_ocr_mode || 'traditional',
       auto_capture: user?.auto_capture || true,
       ai_processing_enabled: user?.ai_processing_enabled || true,
+      vision_model_preference: user?.vision_model_preference || 'gpt-4o-mini',
+      ocr_confidence_threshold: user?.ocr_confidence_threshold || 90,
+      multi_note_detection_enabled: user?.multi_note_detection_enabled || true,
     }
   });
 
   const updateSettingsMutation = useMutation(
     async (data: SettingsForm) => {
-      // This would call an API endpoint to update user settings
-      // For now, we'll just simulate it
-      return new Promise(resolve => setTimeout(resolve, 1000));
+      return await authService.updateSettings({
+        vision_model_preference: data.vision_model_preference,
+        ocr_confidence_threshold: data.ocr_confidence_threshold,
+        multi_note_detection_enabled: data.multi_note_detection_enabled,
+        default_ocr_mode: data.default_ocr_mode,
+        auto_capture: data.auto_capture,
+        ai_processing_enabled: data.ai_processing_enabled,
+      });
     },
     {
       onSuccess: () => {
@@ -48,6 +60,7 @@ export const SettingsPage: React.FC = () => {
   const tabs = [
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'capture', name: 'Capture', icon: Camera },
+    { id: 'vision', name: 'Vision AI', icon: Eye },
     { id: 'ai', name: 'AI Settings', icon: Brain },
     { id: 'privacy', name: 'Privacy', icon: Shield },
   ];
@@ -169,6 +182,75 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-xs text-gray-500">
                     Automatically capture notes when QR code is detected
                   </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'vision' && (
+              <div className="card">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Vision AI Settings</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vision Model
+                    </label>
+                    <select
+                      {...register('vision_model_preference')}
+                      className="input"
+                    >
+                      <option value="gpt-4o-mini">GPT-4o Mini (Fast, Cost-effective)</option>
+                      <option value="gpt-4o">GPT-4o (High Quality)</option>
+                      <option value="gpt-4-vision-preview">GPT-4 Vision Preview (Legacy)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose the vision model for processing handwritten notes when OCR fails
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      OCR Confidence Threshold: {user?.ocr_confidence_threshold || 90}%
+                    </label>
+                    <input
+                      {...register('ocr_confidence_threshold', { valueAsNumber: true })}
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Always use OCR</span>
+                      <span>Always use Vision AI</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      When OCR confidence is below this threshold, Vision AI will be used instead
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      {...register('multi_note_detection_enabled')}
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-700">
+                      Enable multi-note detection
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Automatically detect and process multiple notes in a single image
+                  </p>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Multi-Note Detection</h4>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      <li>• Detects individual notes using QR codes, contours, or AI vision</li>
+                      <li>• Processes each note separately for better accuracy</li>
+                      <li>• Supports 3x3 grid layouts and other configurations</li>
+                      <li>• Falls back to single-note processing if detection fails</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}

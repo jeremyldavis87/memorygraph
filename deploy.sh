@@ -16,10 +16,10 @@ fi
 
 # Set AWS profile
 export AWS_PROFILE=jeremy_personal_local
-export AWS_REGION=us-west-2
+export AWS_REGION=us-east-1
 
 echo "✅ AWS Profile: jeremy_personal_local"
-echo "✅ AWS Region: us-west-2"
+echo "✅ AWS Region: us-east-1"
 
 # Navigate to infrastructure directory
 cd infrastructure
@@ -60,7 +60,7 @@ echo "📝 Updating environment files..."
 cd ..
 
 # Update production environment file
-sed -i "s/memorygraph-db.xxxxx.us-west-2.rds.amazonaws.com/$RDS_ENDPOINT/g" .env.production
+sed -i "s/memorygraph-db.xxxxx.us-east-1.rds.amazonaws.com/$RDS_ENDPOINT/g" .env.production
 sed -i "s/memorygraph-redis.xxxxx.cache.amazonaws.com/$REDIS_ENDPOINT/g" .env.production
 
 echo "✅ Environment files updated with actual endpoints"
@@ -71,12 +71,12 @@ echo "🐳 Building and pushing Docker images..."
 # Build backend image
 cd backend
 docker build -t memorygraph-backend:latest .
-docker tag memorygraph-backend:latest 969325212479.dkr.ecr.us-west-2.amazonaws.com/memorygraph-backend:latest
+docker tag memorygraph-backend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
 
 # Build frontend image
 cd ../frontend
 docker build -t memorygraph-frontend:latest .
-docker tag memorygraph-frontend:latest 969325212479.dkr.ecr.us-west-2.amazonaws.com/memorygraph-frontend:latest
+docker tag memorygraph-frontend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
 
 echo "✅ Docker images built and tagged"
 

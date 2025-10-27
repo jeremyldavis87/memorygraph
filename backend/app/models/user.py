@@ -20,6 +20,9 @@ class User(Base):
     default_ocr_mode = Column(String, default="traditional")
     auto_capture = Column(Boolean, default=True)
     ai_processing_enabled = Column(Boolean, default=True)
+    vision_model_preference = Column(String, default="gpt-4o-mini")
+    ocr_confidence_threshold = Column(Integer, default=90)
+    multi_note_detection_enabled = Column(Boolean, default=True)
     
     # Relationships
     notes = relationship("Note", back_populates="user")
