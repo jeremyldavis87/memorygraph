@@ -80,19 +80,12 @@ class NoteProcessingAgent:
         """
         # Start Braintrust logging if enabled
         if self.braintrust_enabled:
-            with braintrust.traced(
-                name="process_multi_note_image",
-                inputs={
-                    "image_path": image_path,
-                    "config": config,
-                    "model_name": self.model_name
-                }
-            ) as span:
-                return self._process_with_braintrust(image_path, config, span)
+            return self._process_with_braintrust(image_path, config)
         else:
             return self._process_without_braintrust(image_path, config)
     
-    def _process_with_braintrust(self, image_path: str, config: Dict[str, Any], span) -> List[Dict[str, Any]]:
+    @braintrust.traced(name="process_multi_note_image")
+    def _process_with_braintrust(self, image_path: str, config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Process with Braintrust observability."""
         try:
             # Load image
@@ -107,16 +100,16 @@ class NoteProcessingAgent:
             # Step 1: Detect note count and regions
             note_regions = self._detect_note_regions(image, image_path, vision_model)
             
-            span.log({
+            braintrust.log({
                 "note_regions_detected": len(note_regions),
                 "detection_methods": [r.get("detection_method") for r in note_regions]
             })
             
             if not note_regions:
                 # Fallback to single note processing
-                span.log({"fallback_reason": "no_regions_detected"})
+                braintrust.log({"fallback_reason": "no_regions_detected"})
                 result = [self._process_single_note(image_path, config, detection_method="single_note")]
-                span.log({"output": {"notes_processed": len(result)}})
+                braintrust.log({"output": {"notes_processed": len(result)}})
                 return result
             
             # Step 2: Process each note region
@@ -128,7 +121,7 @@ class NoteProcessingAgent:
                 processed_notes.append(note_result)
                 
                 # Log individual note processing
-                span.log({
+                braintrust.log({
                     f"note_{i+1}": {
                         "position": note_result.get("note_position"),
                         "confidence": note_result.get("confidence"),
@@ -137,11 +130,11 @@ class NoteProcessingAgent:
                     }
                 })
             
-            span.log({"output": {"notes_processed": len(processed_notes)}})
+            braintrust.log({"output": {"notes_processed": len(processed_notes)}})
             return processed_notes
             
         except Exception as e:
-            span.log({"error": str(e)})
+            braintrust.log({"error": str(e)})
             print(f"Error processing multi-note image: {e}")
             # Fallback to single note processing
             return [self._process_single_note(image_path, config, detection_method="error_fallback")]
