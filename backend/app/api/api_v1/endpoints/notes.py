@@ -204,9 +204,35 @@ def upload_note(
         content = file.file.read()
         buffer.write(content)
     
-    # Process with OCR
-    ocr_service = OCRService()
-    ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+    # Check if file is an image
+    image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
+    is_image = file_extension.lower() in image_extensions
+    
+    # Process with OCR only for images
+    if is_image:
+        ocr_service = OCRService()
+        ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+    else:
+        # For non-image files, read as text
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text_content = f.read()
+        except UnicodeDecodeError:
+            # Try with different encoding
+            with open(file_path, 'r', encoding='latin-1') as f:
+                text_content = f.read()
+        
+        # Create a simple OCR result for text files
+        ocr_result = {
+            "original_text": text_content.strip(),
+            "content": text_content.strip(),
+            "title": os.path.splitext(file.filename)[0] if file.filename else "Untitled",
+            "sections": [],
+            "qr_code": None,
+            "confidence": 100,  # Assume perfect for text files
+            "tags": [],
+            "action_items": []
+        }
     
     # Check for QR code mapping
     final_category_id = category_id
