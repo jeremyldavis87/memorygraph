@@ -15,31 +15,35 @@ export const CapturePage: React.FC = () => {
 
   const { data: categories } = useQuery('categories', categoriesService.getCategories);
 
-  const uploadMutation = useMutation(notesService.uploadNote, {
-    onSuccess: (note) => {
-      toast.success('Note uploaded successfully!');
-      setSelectedFile(null);
-      setPreview(null);
-      setSelectedCategory(null);
-    },
-    onError: (error: any) => {
-      // Handle different error response formats
-      let errorMessage = 'Upload failed';
-      
-      if (error.response?.data?.detail) {
-        // If detail is an array (Pydantic validation errors), extract messages
-        if (Array.isArray(error.response.data.detail)) {
-          errorMessage = error.response.data.detail.map((err: any) => err.msg).join(', ');
-        } else {
-          errorMessage = error.response.data.detail;
+  const uploadMutation = useMutation(
+    ({ file, categoryId, ocrMode }: { file: File; categoryId?: number; ocrMode: string }) =>
+      notesService.uploadNote(file, categoryId, ocrMode),
+    {
+      onSuccess: (note) => {
+        toast.success('Note uploaded successfully!');
+        setSelectedFile(null);
+        setPreview(null);
+        setSelectedCategory(null);
+      },
+      onError: (error: any) => {
+        // Handle different error response formats
+        let errorMessage = 'Upload failed';
+        
+        if (error.response?.data?.detail) {
+          // If detail is an array (Pydantic validation errors), extract messages
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage = error.response.data.detail.map((err: any) => err.msg).join(', ');
+          } else {
+            errorMessage = error.response.data.detail;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
         }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-    },
-  });
+        
+        toast.error(errorMessage);
+      },
+    }
+  );
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
