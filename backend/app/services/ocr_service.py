@@ -9,7 +9,10 @@ from pyzbar import pyzbar
 class OCRService:
     def __init__(self):
         # Configure Tesseract
-        self.tesseract_config = r'--oem 3 --psm 6'
+        # PSM 6: Assume a single uniform block of text (good for notes)
+        # OEM 3: Use default OCR Engine Mode
+        # Add additional config for better handwritten text recognition
+        self.tesseract_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?;:-()[]{}"\'-_@#$%&*=+/<>|\\'
     
     def process_image(self, image_path: str, mode: str = "traditional") -> Dict[str, Any]:
         """
@@ -276,6 +279,22 @@ class OCRService:
         
         if len(non_empty_lines) < 2:
             error_penalty += 10  # Penalty for very short text
+        
+        # Check for excessive number of unusual characters (like OCR reading grid dots as symbols)
+        unusual_char_count = len(re.findall(r'[¥\\£]', text))
+        if unusual_char_count > 5:
+            error_penalty += 20  # Heavy penalty for clearly garbled output
+        
+        # Check ratio of consonants to vowels (gibberish often has weird ratios)
+        words = text.split()
+        if len(words) > 10:
+            all_text = ''.join(words)
+            vowel_count = len(re.findall(r'[aeiouAEIOU]', all_text))
+            consonant_count = len(re.findall(r'[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]', all_text))
+            if consonant_count > 0:
+                vowel_ratio = vowel_count / consonant_count
+                if vowel_ratio < 0.1:  # Very low vowel ratio often indicates OCR errors
+                    error_penalty += 15
         
         # Calculate final score
         final_score = max(0, base_score - error_penalty)

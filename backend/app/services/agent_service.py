@@ -480,6 +480,11 @@ class NoteProcessingAgent:
             confidence_threshold = config.get("ocr_confidence_threshold", 90)
             vision_model = config.get("vision_model_preference", "gpt-4o-mini")
             
+            # For Rocketbook notes with grid pattern, lower the threshold significantly
+            # OCR often struggles with the dot grid pattern
+            if config.get("source_type") == "rocketbook":
+                confidence_threshold = min(confidence_threshold, 60)  # Much lower threshold for Rocketbooks
+            
             # Step 1: Try OCR first
             ocr_result = self.ocr_service.process_image(image_path)
             

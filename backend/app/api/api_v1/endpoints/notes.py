@@ -217,7 +217,8 @@ def upload_note(
             agent = NoteProcessingAgent(current_user.vision_model_preference)
             config = {
                 "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
-                "vision_model_preference": current_user.vision_model_preference
+                "vision_model_preference": current_user.vision_model_preference,
+                "source_type": "rocketbook"  # Indicate this is a Rocketbook for special processing
             }
             
             agent_results = agent.process_multi_note_image(file_path, config)
