@@ -30,6 +30,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8001:8000"
+    env_file:
+      - ./backend/.env.local
     environment:
       - DATABASE_URL=postgresql://memorygraph:password@postgres:5432/memorygraph
       - REDIS_URL=redis://redis:6379/0
@@ -47,14 +49,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://localhost:8001/api/v1
     ports:
       - "3001:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - REACT_APP_API_URL=http://localhost:8001/api/v1
-    command: npm start
 
   # Graph Services
   extractor-service:
