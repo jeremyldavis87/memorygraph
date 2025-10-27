@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Union
 import os
+import json
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "MemoryGraph"
@@ -25,7 +26,17 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 10485760  # 10MB
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Parse BACKEND_CORS_ORIGINS if it's a JSON string
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            try:
+                self.BACKEND_CORS_ORIGINS = json.loads(self.BACKEND_CORS_ORIGINS)
+            except json.JSONDecodeError:
+                # If it's not JSON, split by comma
+                self.BACKEND_CORS_ORIGINS = [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(',')]
     
     # Development
     DEBUG: bool = True
