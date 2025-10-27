@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # Build the application with environment variable
-ARG REACT_APP_API_URL=/api/v1
+ARG REACT_APP_API_URL=http://localhost:8001/api/v1
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 RUN npm run build
