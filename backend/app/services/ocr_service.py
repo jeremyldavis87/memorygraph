@@ -11,8 +11,8 @@ class OCRService:
         # Configure Tesseract
         # PSM 6: Assume a single uniform block of text (good for notes)
         # OEM 3: Use default OCR Engine Mode
-        # Add additional config for better handwritten text recognition
-        self.tesseract_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?;:-()[]{}"\'-_@#$%&*=+/<>|\\'
+        # Removing char whitelist as it was causing parsing errors with quotes
+        self.tesseract_config = r'--oem 3 --psm 6'
     
     def process_image(self, image_path: str, mode: str = "traditional") -> Dict[str, Any]:
         """
