@@ -100,16 +100,16 @@ class NoteProcessingAgent:
             # Step 1: Detect note count and regions
             note_regions = self._detect_note_regions(image, image_path, vision_model)
             
-            braintrust.log({
-                "note_regions_detected": len(note_regions),
-                "detection_methods": [r.get("detection_method") for r in note_regions]
-            })
+            braintrust.log(
+                note_regions_detected=len(note_regions),
+                detection_methods=[r.get("detection_method") for r in note_regions]
+            )
             
             if not note_regions:
                 # Fallback to single note processing
-                braintrust.log({"fallback_reason": "no_regions_detected"})
+                braintrust.log(fallback_reason="no_regions_detected")
                 result = [self._process_single_note(image_path, config, detection_method="single_note")]
-                braintrust.log({"output": {"notes_processed": len(result)}})
+                braintrust.log(output={"notes_processed": len(result)})
                 return result
             
             # Step 2: Process each note region
@@ -121,7 +121,7 @@ class NoteProcessingAgent:
                 processed_notes.append(note_result)
                 
                 # Log individual note processing
-                braintrust.log({
+                braintrust.log(**{
                     f"note_{i+1}": {
                         "position": note_result.get("note_position"),
                         "confidence": note_result.get("confidence"),
@@ -130,11 +130,11 @@ class NoteProcessingAgent:
                     }
                 })
             
-            braintrust.log({"output": {"notes_processed": len(processed_notes)}})
+            braintrust.log(output={"notes_processed": len(processed_notes)})
             return processed_notes
             
         except Exception as e:
-            braintrust.log({"error": str(e)})
+            braintrust.log(error=str(e))
             print(f"Error processing multi-note image: {e}")
             # Fallback to single note processing
             return [self._process_single_note(image_path, config, detection_method="error_fallback")]
@@ -386,17 +386,17 @@ class NoteProcessingAgent:
             # Calculate quality score
             quality_score = self.ocr_service.calculate_ocr_quality_score(ocr_result)
             
-            span.log({
-                "ocr_confidence": quality_score,
-                "confidence_threshold": confidence_threshold,
-                "ocr_text_length": len(ocr_result.get("content", "")),
-                "qr_code_detected": bool(ocr_result.get("qr_code"))
-            })
+            span.log(
+                ocr_confidence=quality_score,
+                confidence_threshold=confidence_threshold,
+                ocr_text_length=len(ocr_result.get("content", "")),
+                qr_code_detected=bool(ocr_result.get("qr_code"))
+            )
             
             # Step 2: Check if OCR quality is sufficient
             if quality_score >= confidence_threshold:
                 # OCR is good enough
-                span.log({"processing_method": "ocr", "fallback_reason": "none"})
+                span.log(processing_method="ocr", fallback_reason="none")
                 result = {
                     "success": True,
                     "content": ocr_result["content"],
@@ -410,11 +410,11 @@ class NoteProcessingAgent:
                     "qr_code": ocr_result["qr_code"],
                     "detection_method": detection_method
                 }
-                span.log({"output": result})
+                span.log(output=result)
                 return result
             else:
                 # OCR quality is insufficient, use vision LLM
-                span.log({"processing_method": "vision_llm", "fallback_reason": "low_ocr_confidence"})
+                span.log(processing_method="vision_llm", fallback_reason="low_ocr_confidence")
                 
                 vision_result = self.ai_service.extract_text_from_note_region(
                     image_path, 
@@ -422,10 +422,10 @@ class NoteProcessingAgent:
                     vision_model
                 )
                 
-                span.log({
-                    "vision_llm_success": vision_result.get("success", False),
-                    "vision_model_used": vision_model
-                })
+                span.log(
+                    vision_llm_success=vision_result.get("success", False),
+                    vision_model_used=vision_model
+                )
                 
                 if vision_result.get("success"):
                     extracted_text = vision_result["extracted_text"]
@@ -449,11 +449,11 @@ class NoteProcessingAgent:
                         "qr_code": ocr_result["qr_code"],  # Still try to get QR code from original
                         "detection_method": detection_method
                     }
-                    span.log({"output": result})
+                    span.log(output=result)
                     return result
                 else:
                     # Vision LLM failed, return OCR result anyway
-                    span.log({"processing_method": "ocr_fallback", "fallback_reason": "vision_llm_failed"})
+                    span.log(processing_method="ocr_fallback", fallback_reason="vision_llm_failed")
                     result = {
                         "success": True,
                         "content": ocr_result["content"],
@@ -467,11 +467,11 @@ class NoteProcessingAgent:
                         "qr_code": ocr_result["qr_code"],
                         "detection_method": detection_method
                     }
-                    span.log({"output": result})
+                    span.log(output=result)
                     return result
                     
         except Exception as e:
-            span.log({"error": str(e)})
+            span.log(error=str(e))
             print(f"Error processing single note: {e}")
             return self._create_error_note_result(1, str(e))
     
