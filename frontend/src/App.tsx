@@ -11,6 +11,7 @@ import { RegisterPage } from './pages/RegisterPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { CapturePage } from './pages/CapturePage.tsx';
 import { NotesPage } from './pages/NotesPage.tsx';
+import { NoteDetailPage } from './pages/NoteDetailPage.tsx';
 import { SearchPage } from './pages/SearchPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 
@@ -41,6 +42,7 @@ function App() {
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/capture" element={<CapturePage />} />
                         <Route path="/notes" element={<NotesPage />} />
+                        <Route path="/notes/:id" element={<NoteDetailPage />} />
                         <Route path="/search" element={<SearchPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                       </Routes>
