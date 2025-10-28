@@ -67,18 +67,19 @@ class OrchestratorAgent(BaseAgent):
         
         # Start Braintrust logging if enabled
         if self.braintrust_enabled and BRAINTRUST_AVAILABLE:
-            from braintrust import experiment
-            with experiment.start_span(
-                name="orchestrator_process",
-                inputs={"image_path": image_path, "config": config}
-            ) as span:
-                try:
-                    result = await self._process_with_tracing(span, image_path, config, start_time)
-                    span.log(output=result)
-                    return result
-                except Exception as e:
-                    span.log(error=str(e))
-                    raise
+            try:
+                import braintrust
+                with braintrust.start_span(name="orchestrator_process", 
+                                         inputs={"image_path": image_path, "config": config}) as span:
+                    try:
+                        result = await self._process_with_tracing(span, image_path, config, start_time)
+                        braintrust.update_span(output=result)
+                        return result
+                    except Exception as e:
+                        braintrust.update_span(error=str(e))
+                        raise
+            except Exception as e:
+                self.logger.warning(f"Braintrust initialization failed, processing without tracing: {e}")
         
         # Process without Braintrust
         return await self._process_without_tracing(image_path, config, start_time)
@@ -91,25 +92,25 @@ class OrchestratorAgent(BaseAgent):
             image_result = await self.image_agent.process(image_path)
             
             if isinstance(image_result, PartialResult):
-                span.log(stage="image_preprocessing", status="failed", error=image_result.error)
+                braintrust.log(stage="image_preprocessing", status="failed", error=image_result.error)
                 return self._create_error_result(image_path, "Image preprocessing failed", image_result.error)
             
             processed_path = image_result["processed_path"]
             color_info = image_result["color_info"]
             quality_metrics = image_result["quality_metrics"]
             
-            span.log(stage="image_preprocessing", status="success", quality=quality_metrics["overall_quality"])
+            braintrust.log(stage="image_preprocessing", status="success", quality=quality_metrics["overall_quality"])
             
             # Phase 2: Note separation
             self.logger.info("Starting note separation")
             separation_result = await self.separation_agent.process(image_path)
             
             if isinstance(separation_result, PartialResult):
-                span.log(stage="note_separation", status="failed", error=separation_result.error)
+                braintrust.log(stage="note_separation", status="failed", error=separation_result.error)
                 return self._create_error_result(image_path, "Note separation failed", separation_result.error)
             
             note_regions = separation_result
-            span.log(stage="note_separation", status="success", regions_detected=len(note_regions))
+            braintrust.log(stage="note_separation", status="success", regions_detected=len(note_regions))
             
             # Phase 3: Process each note region
             self.logger.info(f"Processing {len(note_regions)} note regions")
@@ -130,7 +131,7 @@ class OrchestratorAgent(BaseAgent):
             # Phase 4: Generate comprehensive output
             processing_time_ms = int((time.time() - start_time) * 1000)
             
-            span.log(stage="comprehensive_output_generation", notes_count=len(processed_notes), processing_time_ms=processing_time_ms)
+            braintrust.log(stage="comprehensive_output_generation", notes_count=len(processed_notes), processing_time_ms=processing_time_ms)
             
             comprehensive_output = self._generate_comprehensive_output(
                 image_path, processed_notes, processing_time_ms, image_result
@@ -141,7 +142,7 @@ class OrchestratorAgent(BaseAgent):
             self.log_metric("processing_time_ms", processing_time_ms)
             self.log_metric("success_rate", len([n for n in processed_notes if n.get("success", True)]) / len(processed_notes))
             
-            span.log(
+            braintrust.log(
                 total_notes_processed=len(processed_notes),
                 average_confidence=sum(note.get("quality_metrics", {}).get("overall_confidence", 0) for note in processed_notes if note.get("success")) / len([n for n in processed_notes if n.get("success")]) if any(note.get("success") for note in processed_notes) else 0
             )
