@@ -252,14 +252,24 @@ async def upload_note(
                 parent_note_id = None
                 
                 for note_data in notes_data:
-                    if not note_data.get("success", True):
+                    # Convert Pydantic model to dict if needed
+                    if hasattr(note_data, 'model_dump'):
+                        note_dict = note_data.model_dump()
+                    elif isinstance(note_data, dict):
+                        note_dict = note_data
+                    else:
+                        logger.warning(f"Skipping note_data with unknown type: {type(note_data)}")
+                        continue
+                    
+                    if not note_dict.get("success", True) if "success" in note_dict else True:
+                        logger.info(f"Skipping note with success=False")
                         continue
                     
                     # Extract data from comprehensive structure
-                    text_content = note_data.get("text_content", {})
-                    structure = note_data.get("structure", {})
-                    tags = note_data.get("tags", {})
-                    qr_codes = note_data.get("qr_codes", [])
+                    text_content = note_dict.get("text_content", {})
+                    structure = note_dict.get("structure", {})
+                    tags = note_dict.get("tags", {})
+                    qr_codes = note_dict.get("qr_codes", [])
                     
                     # Check for QR code mapping
                     final_category_id = category_id
@@ -303,11 +313,11 @@ async def upload_note(
                         ocr_confidence=int(text_content.get("confidence_score", 0) * 100),
                         processing_status="completed",
                         parent_note_id=parent_note_id,
-                        note_position=note_data.get("note_id", len(created_notes) + 1),
+                        note_position=note_dict.get("note_id", len(created_notes) + 1),
                         detection_method="orchestrator_agent",
                         note_metadata_json={
                             "comprehensive_output": comprehensive_output,
-                            "note_data": note_data,
+                            "note_data": note_dict,
                             "qr_code": qr_code,
                             "qr_code_mapped": qr_code is not None and final_category_id != category_id,
                             "full_content": full_content,
@@ -316,7 +326,7 @@ async def upload_note(
                             "agent_processed": True,
                             "structure": structure,
                             "tags": tags,
-                            "quality_metrics": note_data.get("quality_metrics", {})
+                            "quality_metrics": note_dict.get("quality_metrics", {})
                         }
                     )
                     
