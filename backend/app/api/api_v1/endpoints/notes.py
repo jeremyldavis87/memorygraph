@@ -185,7 +185,7 @@ def delete_note(
     return {"message": "Note deleted successfully"}
 
 @router.post("/upload", response_model=NoteResponse)
-def upload_note(
+async def upload_note(
     file: UploadFile = File(...),
     category_id: Optional[int] = Form(None),
     ocr_mode: str = Form("traditional"),
@@ -213,7 +213,7 @@ def upload_note(
     if is_image:
         # Check if multi-note detection is enabled for user
         if current_user.multi_note_detection_enabled:
-            # Use agent for multi-note processing
+            # Use new agent architecture for multi-note processing
             agent = NoteProcessingAgent(current_user.vision_model_preference)
             config = {
                 "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
@@ -221,100 +221,132 @@ def upload_note(
                 "source_type": "rocketbook"  # Indicate this is a Rocketbook for special processing
             }
             
-            agent_results = agent.process_multi_note_image(file_path, config)
+            # Process with orchestrator agent
+            processing_result = await agent.process_multi_note_image(file_path, config)
             
-            # Create multiple notes from agent results
-            created_notes = []
-            parent_note_id = None
-            
-            for i, result in enumerate(agent_results):
-                if not result.get("success", False):
-                    continue
+            # Handle comprehensive JSON response
+            if hasattr(processing_result, 'data') and processing_result.data:
+                # Success case - comprehensive output
+                comprehensive_output = processing_result.data
+                notes_data = comprehensive_output.get("notes", [])
                 
-                # Check for QR code mapping
-                final_category_id = category_id
-                qr_code = result.get("qr_code")
+                # Create multiple notes from comprehensive results
+                created_notes = []
+                parent_note_id = None
                 
-                if qr_code:
-                    from app.models.category import QRCode
-                    qr_mapping = db.query(QRCode).filter(
-                        QRCode.code == qr_code,
-                        QRCode.user_id == current_user.id
-                    ).first()
+                for note_data in notes_data:
+                    if not note_data.get("success", True):
+                        continue
                     
-                    if qr_mapping:
-                        final_category_id = qr_mapping.category_id
-                
-                # Prepare content for hybrid storage
-                full_content = result.get("content", "")
-                full_original_text = result.get("original_text", "")
-                content_preview = full_content[:1000] if full_content else ""
-                original_text_preview = full_original_text[:1000] if full_original_text else ""
-                
-                # Create note
-                note = Note(
-                    user_id=current_user.id,
-                    title=result.get("title", f"Note {i+1}"),
-                    content=content_preview,
-                    original_text=original_text_preview,
-                    content_preview=content_preview,
-                    has_full_content_in_graph=True,
-                    source_type="rocketbook",
-                    category_id=final_category_id,
-                    file_path=file_path,
-                    image_path=file_path,
-                    ocr_mode=ocr_mode,
-                    ocr_confidence=result.get("confidence", 0),
-                    processing_status="completed",
-                    parent_note_id=parent_note_id,
-                    note_position=result.get("note_position", i + 1),
-                    detection_method=result.get("detection_method", "agent"),
-                    note_metadata_json={
-                        "sections": result.get("sections", []),
-                        "qr_code": qr_code,
-                        "qr_code_mapped": qr_code is not None and final_category_id != category_id,
-                        "full_content": full_content,
-                        "full_original_text": full_original_text,
-                        "processing_method": result.get("processing_method", "unknown"),
-                        "agent_processed": True
-                    }
-                )
-                
-                db.add(note)
-                db.commit()
-                db.refresh(note)
-                
-                # Set parent_note_id for subsequent notes
-                if parent_note_id is None:
-                    parent_note_id = note.id
-                
-                # Process with AI if enabled
-                if current_user.ai_processing_enabled:
-                    ai_service = AIService()
-                    ai_result = ai_service.process_note(note)
+                    # Extract data from comprehensive structure
+                    text_content = note_data.get("text_content", {})
+                    structure = note_data.get("structure", {})
+                    tags = note_data.get("tags", {})
+                    qr_codes = note_data.get("qr_codes", [])
                     
-                    # Update note with AI results
-                    note.summary = ai_result.get("summary")
-                    note.entities = ai_result.get("entities")
-                    note.action_items = ai_result.get("action_items")
-                    note.tags = ai_result.get("tags")
-                    note.note_metadata_json.update(ai_result.get("note_metadata_json", {}))
+                    # Check for QR code mapping
+                    final_category_id = category_id
+                    qr_code = None
+                    if qr_codes:
+                        qr_code = qr_codes[0].get("data") if qr_codes else None
                     
+                    if qr_code:
+                        from app.models.category import QRCode
+                        qr_mapping = db.query(QRCode).filter(
+                            QRCode.code == qr_code,
+                            QRCode.user_id == current_user.id
+                        ).first()
+                        
+                        if qr_mapping:
+                            final_category_id = qr_mapping.category_id
+                    
+                    # Prepare content for hybrid storage
+                    full_content = text_content.get("formatted_text", "")
+                    full_original_text = text_content.get("raw_text", "")
+                    content_preview = full_content[:1000] if full_content else ""
+                    original_text_preview = full_original_text[:1000] if full_original_text else ""
+                    
+                    # Extract title from structure
+                    title_data = structure.get("title")
+                    title = title_data.get("text") if title_data else f"Note {len(created_notes) + 1}"
+                    
+                    # Create note
+                    note = Note(
+                        user_id=current_user.id,
+                        title=title,
+                        content=content_preview,
+                        original_text=original_text_preview,
+                        content_preview=content_preview,
+                        has_full_content_in_graph=True,
+                        source_type="rocketbook",
+                        category_id=final_category_id,
+                        file_path=file_path,
+                        image_path=file_path,
+                        ocr_mode=ocr_mode,
+                        ocr_confidence=int(text_content.get("confidence_score", 0) * 100),
+                        processing_status="completed",
+                        parent_note_id=parent_note_id,
+                        note_position=note_data.get("note_id", len(created_notes) + 1),
+                        detection_method="orchestrator_agent",
+                        note_metadata_json={
+                            "comprehensive_output": comprehensive_output,
+                            "note_data": note_data,
+                            "qr_code": qr_code,
+                            "qr_code_mapped": qr_code is not None and final_category_id != category_id,
+                            "full_content": full_content,
+                            "full_original_text": full_original_text,
+                            "processing_method": text_content.get("extraction_method", "unknown"),
+                            "agent_processed": True,
+                            "structure": structure,
+                            "tags": tags,
+                            "quality_metrics": note_data.get("quality_metrics", {})
+                        }
+                    )
+                    
+                    db.add(note)
                     db.commit()
                     db.refresh(note)
+                    
+                    # Set parent_note_id for subsequent notes
+                    if parent_note_id is None:
+                        parent_note_id = note.id
+                    
+                    # Process with AI if enabled
+                    if current_user.ai_processing_enabled:
+                        ai_service = AIService()
+                        ai_result = ai_service.process_note(note)
+                        
+                        # Update note with AI results
+                        note.summary = ai_result.get("summary")
+                        note.entities = ai_result.get("entities")
+                        note.action_items = ai_result.get("action_items")
+                        note.tags = ai_result.get("tags")
+                        note.note_metadata_json.update(ai_result.get("note_metadata_json", {}))
+                        
+                        db.commit()
+                        db.refresh(note)
+                    
+                    created_notes.append(note)
                 
-                created_notes.append(note)
-            
-            # Return the first note (parent) with information about total count
-            if created_notes:
-                parent_note = created_notes[0]
-                parent_note.note_metadata_json["total_notes_created"] = len(created_notes)
-                parent_note.note_metadata_json["child_note_ids"] = [note.id for note in created_notes[1:]]
-                db.commit()
-                db.refresh(parent_note)
-                return parent_note
+                # Return the first note (parent) with information about total count
+                if created_notes:
+                    parent_note = created_notes[0]
+                    parent_note.note_metadata_json["total_notes_created"] = len(created_notes)
+                    parent_note.note_metadata_json["child_note_ids"] = [note.id for note in created_notes[1:]]
+                    db.commit()
+                    db.refresh(parent_note)
+                    return parent_note
+                else:
+                    # Fallback to single note processing if agent failed
+                    ocr_service = OCRService()
+                    ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+                    
+                    # Process single note with traditional OCR
+                    return _create_single_note_from_ocr(
+                        ocr_result, file_path, category_id, current_user, db, ocr_mode
+                    )
             else:
-                # Fallback to single note processing if agent failed
+                # Error case - fallback to traditional OCR
                 ocr_service = OCRService()
                 ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
                 

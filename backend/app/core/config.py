@@ -21,6 +21,25 @@ class Settings(BaseSettings):
     BRAINTRUST_API_KEY: Optional[str] = None
     OCR_MODE: str = "traditional"  # traditional, llm, or auto
     
+    # Agent Configuration
+    AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-4o-mini")
+    AGENT_OCR_CONFIDENCE_THRESHOLD: int = int(os.getenv("AGENT_OCR_CONFIDENCE_THRESHOLD", "90"))
+    AGENT_PROCESSING_TIMEOUT: int = int(os.getenv("AGENT_PROCESSING_TIMEOUT", "30"))  # seconds
+    AGENT_PARALLEL_PROCESSING_LIMIT: int = int(os.getenv("AGENT_PARALLEL_PROCESSING_LIMIT", "5"))
+    AGENT_MAX_RETRIES: int = int(os.getenv("AGENT_MAX_RETRIES", "1"))
+    AGENT_ENABLE_BRAINTRUST: bool = os.getenv("AGENT_ENABLE_BRAINTRUST", "true").lower() == "true"
+    
+    # Color-to-Category Mappings
+    AGENT_COLOR_CATEGORY_MAPPINGS: dict = {
+        "yellow": "general",
+        "pink": "urgent", 
+        "blue": "work",
+        "green": "personal",
+        "orange": "ideas",
+        "white": "notes",
+        "gray": "archive"
+    }
+    
     # File Storage
     UPLOAD_DIR: str = "./uploads"
     MAX_FILE_SIZE: int = 10485760  # 10MB

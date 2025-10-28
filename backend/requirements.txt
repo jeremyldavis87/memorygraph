@@ -34,3 +34,4 @@ email-validator>=2.1.0
 # pydantic-ai>=0.0.8
 pydantic-ai-slim[anthropic,openai]==0.4.3
 braintrust>=0.0.20
+scikit-learn>=1.3.0
