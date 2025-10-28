@@ -69,8 +69,10 @@ class OrchestratorAgent(BaseAgent):
         if self.braintrust_enabled and BRAINTRUST_AVAILABLE:
             try:
                 import braintrust
-                with braintrust.start_span(name="orchestrator_process", 
-                                         input={"image_path": image_path, "config": config}) as span:
+                # Get or initialize logger for application logs
+                logger = braintrust.init_logger(name="memorygraph-orchestrator")
+                with logger.start_span(name="orchestrator_process", 
+                                       input={"image_path": image_path, "config": config}) as span:
                     try:
                         result = await self._process_with_tracing(span, image_path, config, start_time)
                         span.log(output=result)
