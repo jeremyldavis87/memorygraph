@@ -59,21 +59,25 @@ class ExtractionAgent(BaseAgent):
         # Configure Tesseract
         self.tesseract_config = r'--oem 3 --psm 6'
     
-    async def process(self, image_path: str, region_bbox: Optional[Tuple[int, int, int, int]] = None) -> Union[HybridResult, PartialResult]:
+    async def process(self, image_path: str, region_bbox: Optional[Tuple[int, int, int, int]] = None, config: Optional[Dict[str, Any]] = None) -> Union[HybridResult, PartialResult]:
         """
         Main processing method for text extraction.
         
         Args:
             image_path: Path to the input image
             region_bbox: Optional bounding box (x, y, width, height) for region extraction
+            config: Optional configuration dict with ocr_mode setting
             
         Returns:
             HybridResult with merged text or PartialResult if processing fails
         """
-        return await self.execute_with_retry(self._extract_parallel, image_path, region_bbox)
+        return await self.execute_with_retry(self._extract_parallel, image_path, region_bbox, config)
     
-    async def _extract_parallel(self, image_path: str, region_bbox: Optional[Tuple[int, int, int, int]] = None) -> HybridResult:
-        """Internal method to run OCR and Vision LLM in parallel"""
+    async def _extract_parallel(self, image_path: str, region_bbox: Optional[Tuple[int, int, int, int]] = None, config: Optional[Dict[str, Any]] = None) -> HybridResult:
+        """Internal method to run OCR and Vision LLM based on ocr_mode"""
+        # Get ocr_mode from config
+        ocr_mode = config.get("ocr_mode", "auto") if config else "auto"
+        
         # Prepare image for extraction
         if region_bbox:
             # Extract region from image
@@ -91,28 +95,56 @@ class ExtractionAgent(BaseAgent):
             region_path = image_path
         
         try:
-            # Launch both extractions simultaneously
-            ocr_task = asyncio.create_task(self._extract_with_ocr(region_path))
-            llm_task = asyncio.create_task(self._extract_with_vision(region_path))
-            
-            # Wait for both to complete
-            ocr_result, llm_result = await asyncio.gather(ocr_task, llm_task)
-            
-            # Merge results
-            merged_result = self._merge_results(ocr_result, llm_result)
-            
-            # Log metrics
-            self.log_metric("ocr_confidence", ocr_result.confidence)
-            self.log_metric("llm_confidence", llm_result.confidence)
-            self.log_metric("final_confidence", merged_result.confidence)
-            self.log_metric("text_length", len(merged_result.text))
-            
-            return merged_result
+            # Route based on ocr_mode
+            if ocr_mode == "traditional":
+                # Only use OCR
+                self.logger.info("Using traditional OCR mode (OCR only)")
+                ocr_result = await self._extract_with_ocr(region_path)
+                return HybridResult(
+                    text=ocr_result.text,
+                    confidence=ocr_result.confidence,
+                    ocr_version=ocr_result.text,
+                    llm_version="",
+                    differences=["Vision LLM skipped in traditional mode"],
+                    extraction_method="ocr_only"
+                )
+            elif ocr_mode == "llm":
+                # Only use Vision LLM
+                self.logger.info("Using LLM mode (Vision LLM only)")
+                llm_result = await self._extract_with_vision(region_path)
+                return HybridResult(
+                    text=llm_result.text,
+                    confidence=llm_result.confidence,
+                    ocr_version="",
+                    llm_version=llm_result.text,
+                    differences=["OCR skipped in LLM mode"],
+                    extraction_method="vision_only"
+                )
+            else:
+                # Default: hybrid mode (auto) - run both in parallel
+                self.logger.info("Using hybrid mode (OCR + Vision LLM)")
+                ocr_task = asyncio.create_task(self._extract_with_ocr(region_path))
+                llm_task = asyncio.create_task(self._extract_with_vision(region_path))
+                
+                # Wait for both to complete
+                ocr_result, llm_result = await asyncio.gather(ocr_task, llm_task)
+                
+                # Merge results
+                merged_result = self._merge_results(ocr_result, llm_result)
+                
+                # Log metrics
+                self.log_metric("ocr_confidence", ocr_result.confidence)
+                self.log_metric("llm_confidence", llm_result.confidence)
+                self.log_metric("final_confidence", merged_result.confidence)
+                self.log_metric("text_length", len(merged_result.text))
+                
+                return merged_result
             
         finally:
             # Clean up temporary file if created
             if region_bbox and region_path != image_path:
                 try:
+                    import os
                     os.unlink(region_path)
                 except:
                     pass

@@ -245,7 +245,7 @@ class OrchestratorAgent(BaseAgent):
         note_start_time = time.time()
         
         # Phase 1: Text extraction
-        extraction_result = await self.extraction_agent.process(image_path, region.bbox)
+        extraction_result = await self.extraction_agent.process(image_path, region.bbox, config)
         
         if isinstance(extraction_result, PartialResult):
             return self._create_error_note(f"note_{note_id:03d}", extraction_result.error)
