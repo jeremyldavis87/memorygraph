@@ -24,7 +24,7 @@ class AIService:
             if BRAINTRUST_AVAILABLE and settings.BRAINTRUST_API_KEY:
                 try:
                     braintrust.init(
-                        project_name="memorygraph-agent",
+                        project="memorygraph-agent",
                         api_key=settings.BRAINTRUST_API_KEY
                     )
                     # Wrap the client for automatic tracing

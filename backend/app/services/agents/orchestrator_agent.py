@@ -72,7 +72,7 @@ class OrchestratorAgent(BaseAgent):
                 import braintrust
                 # Initialize logger for application logs
                 logger = braintrust.init_logger(
-                    project_name="memorygraph-agent",
+                    project="memorygraph-agent",
                     api_key=settings.BRAINTRUST_API_KEY
                 )
                 with logger.start_span(name="orchestrator_process", 

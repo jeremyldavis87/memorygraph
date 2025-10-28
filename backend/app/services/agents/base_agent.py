@@ -58,7 +58,7 @@ class BaseAgent(ABC):
         if self.braintrust_enabled:
             try:
                 braintrust.init(
-                    project_name="memorygraph-agent",
+                    project="memorygraph-agent",
                     api_key=settings.BRAINTRUST_API_KEY
                 )
             except Exception as e:
