@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libzbar0 \
     libopengl0 \
     libgl1 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
