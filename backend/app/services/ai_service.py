@@ -1,15 +1,39 @@
-import openai
-from typing import Dict, Any, List
+from openai import OpenAI
+from typing import Dict, Any, List, Optional
 import json
 import re
 import base64
 import os
 from app.core.config import settings
 
+# Try to import Braintrust for automatic tracing
+try:
+    import braintrust
+    BRAINTRUST_AVAILABLE = True
+except ImportError:
+    BRAINTRUST_AVAILABLE = False
+
 class AIService:
     def __init__(self):
+        self.client = None
         if settings.OPENAI_API_KEY:
-            openai.api_key = settings.OPENAI_API_KEY
+            # Create OpenAI client
+            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            
+            # Wrap with Braintrust for automatic tracing if available
+            if BRAINTRUST_AVAILABLE and settings.BRAINTRUST_API_KEY:
+                try:
+                    braintrust.init(
+                        project_name="memorygraph-agent",
+                        api_key=settings.BRAINTRUST_API_KEY
+                    )
+                    # Wrap the client for automatic tracing
+                    self.client = braintrust.wrap_openai(client)
+                except Exception as e:
+                    print(f"Failed to wrap OpenAI client with Braintrust: {e}")
+                    self.client = client
+            else:
+                self.client = client
     
     def process_note(self, note) -> Dict[str, Any]:
         """
@@ -60,8 +84,11 @@ class AIService:
         Summary:
         """
         
+        if not self.client:
+            return ""
+        
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=150,
@@ -90,8 +117,11 @@ class AIService:
         JSON:
         """
         
+        if not self.client:
+            return []
+        
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
@@ -125,8 +155,11 @@ class AIService:
         JSON:
         """
         
+        if not self.client:
+            return []
+        
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
@@ -157,8 +190,11 @@ class AIService:
         JSON:
         """
         
+        if not self.client:
+            return []
+        
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=100,
@@ -218,8 +254,11 @@ class AIService:
                 }
             ]
             
-            # Call OpenAI Vision API
-            response = openai.ChatCompletion.create(
+            if not self.client:
+                return {"error": "OpenAI client not initialized"}
+            
+            # Call OpenAI Vision API (automatically traced by Braintrust wrapper)
+            response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 max_tokens=2000,
