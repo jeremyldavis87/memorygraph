@@ -26,6 +26,7 @@ from .structure_agent import StructureRecognitionAgent, DocumentStructure
 from .metadata_agent import MetadataAgent
 from .postprocess_agent import PostProcessAgent, CorrectionResult
 from app.schemas.agent_schemas import ProcessingOutput, Note, ImageMetadata, Summary
+from app.core.config import settings
 
 
 class OrchestratorAgent(BaseAgent):
@@ -69,8 +70,11 @@ class OrchestratorAgent(BaseAgent):
         if self.braintrust_enabled and BRAINTRUST_AVAILABLE:
             try:
                 import braintrust
-                # Get or initialize logger for application logs
-                logger = braintrust.init_logger(name="memorygraph-orchestrator")
+                # Initialize logger for application logs
+                logger = braintrust.init_logger(
+                    project_name="memorygraph-agent",
+                    api_key=settings.BRAINTRUST_API_KEY
+                )
                 with logger.start_span(name="orchestrator_process", 
                                        input={"image_path": image_path, "config": config}) as span:
                     try:
