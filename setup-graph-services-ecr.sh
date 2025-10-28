@@ -14,7 +14,7 @@ export AWS_ACCOUNT_ID=969325212479
 
 # Login to ECR
 echo "🔐 Logging in to ECR..."
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
 # Create ECR repositories for graph services
 echo "📦 Creating ECR repositories for graph services..."

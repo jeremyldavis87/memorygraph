@@ -1,21 +1,22 @@
 #!/bin/bash
 
 # MemoryGraph Local Development Startup Script
-# This script starts all services using Docker Compose
+# This script starts all services using Podman Compose
 
 set -e
 
 echo "🚀 Starting MemoryGraph Development Environment..."
 
-# Check if Docker is running
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker and try again."
+# Check if Podman is running
+if ! podman info > /dev/null 2>&1; then
+    echo "❌ Podman is not running. Please start Podman and try again."
     exit 1
 fi
 
-# Check if Docker Compose is available
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose and try again."
+# Check if Podman Compose is available
+if ! command -v podman-compose &> /dev/null; then
+    echo "❌ Podman Compose is not installed. Please install podman-compose and try again."
+    echo "   You can install it with: pip install podman-compose"
     exit 1
 fi
 
@@ -32,22 +33,22 @@ fi
 mkdir -p uploads
 
 # Start services
-echo "🐳 Starting Docker containers..."
-docker-compose up -d
+echo "🐳 Starting Podman containers..."
+podman-compose -f podman-compose.yml up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
 
 # Wait for PostgreSQL
 echo "   Waiting for PostgreSQL..."
-until docker-compose exec -T postgres pg_isready -U memorygraph > /dev/null 2>&1; do
+until podman-compose -f podman-compose.yml exec -T postgres pg_isready -U memorygraph > /dev/null 2>&1; do
     sleep 2
 done
 echo "   ✅ PostgreSQL is ready"
 
 # Wait for Redis
 echo "   Waiting for Redis..."
-until docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; do
+until podman-compose -f podman-compose.yml exec -T redis redis-cli ping > /dev/null 2>&1; do
     sleep 2
 done
 echo "   ✅ Redis is ready"
@@ -76,9 +77,9 @@ echo "🗄️  PostgreSQL: localhost:5433"
 echo "🔴 Redis: localhost:6380"
 echo ""
 echo "To stop the services, run: ./stop.sh"
-echo "To view logs, run: docker-compose logs -f"
+echo "To view logs, run: podman-compose -f podman-compose.yml logs -f"
 echo ""
 
 # Show running containers
 echo "📋 Running containers:"
-docker-compose ps
+podman-compose -f podman-compose.yml ps

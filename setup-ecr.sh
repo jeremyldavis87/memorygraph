@@ -14,7 +14,7 @@ export AWS_ACCOUNT_ID=969325212479
 
 # Login to ECR
 echo "🔐 Logging in to ECR..."
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
 # Create ECR repositories
 echo "📦 Creating ECR repositories..."
@@ -38,21 +38,21 @@ aws ecr create-repository \
 echo "✅ ECR repositories created"
 
 # Build and push images
-echo "🔨 Building and pushing Docker images..."
+echo "🔨 Building and pushing Podman images..."
 
 # Backend
 cd backend
-docker build -t memorygraph-backend:latest .
-docker tag memorygraph-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
-docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
+podman build -t memorygraph-backend:latest .
+podman tag memorygraph-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
+podman push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
 
 # Frontend
 cd ../frontend
-docker build -t memorygraph-frontend:latest .
-docker tag memorygraph-frontend:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
-docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
+podman build -t memorygraph-frontend:latest .
+podman tag memorygraph-frontend:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
+podman push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
 
-echo "✅ Docker images pushed to ECR"
+echo "✅ Podman images pushed to ECR"
 
 echo "🎉 ECR setup complete!"
 echo "Backend image: $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest"

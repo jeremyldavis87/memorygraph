@@ -43,8 +43,8 @@ dev:
 	@./start-dev.sh
 
 dev-services:
-	@echo "🐳 Starting Docker services..."
-	@docker-compose -f docker-compose.local.yml up -d
+	@echo "🐳 Starting Podman services..."
+	@podman-compose -f podman-compose.local.yml up -d
 	@echo "✅ Services started! Backend and frontend need to be started separately."
 
 stop:
@@ -53,8 +53,8 @@ stop:
 
 clean:
 	@echo "🧹 Cleaning up containers and volumes..."
-	@docker-compose -f docker-compose.local.yml down -v
-	@docker system prune -f
+	@podman-compose -f podman-compose.local.yml down -v
+	@podman system prune -f
 
 # Testing
 test: test-backend test-frontend test-build
