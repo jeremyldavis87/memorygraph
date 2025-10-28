@@ -6,7 +6,7 @@ This guide covers local development setup and multi-environment deployment for t
 
 MemoryGraph uses a multi-environment architecture:
 
-- **Local Development**: Run on your machine with Docker services
+- **Local Development**: Run on your machine with Podman services
 - **Dev Environment**: Deployed from `develop` branch to AWS
 - **Prod Environment**: Deployed from `main` branch to AWS
 
@@ -14,7 +14,7 @@ MemoryGraph uses a multi-environment architecture:
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- Podman and Podman Compose
 - Node.js 18+
 - Python 3.12+
 - Git
@@ -50,8 +50,8 @@ MemoryGraph uses a multi-environment architecture:
 
 - `./start-dev.sh` - Start all development services
 - `./stop-dev.sh` - Stop all development services
-- `docker-compose up -d` - Start only Docker services (PostgreSQL, Redis)
-- `docker-compose down` - Stop Docker services
+- `podman-compose up -d` - Start only Podman services (PostgreSQL, Redis)
+- `podman-compose down` - Stop Podman services
 
 ## 🌍 Multi-Environment Deployment
 
@@ -81,8 +81,8 @@ infrastructure/
 
 | Feature | Local | Dev | Prod |
 |---------|-------|-----|------|
-| Database | PostgreSQL (Docker) | RDS t3.micro | RDS t3.small |
-| Redis | Redis (Docker) | ElastiCache t3.micro | ElastiCache t3.small |
+| Database | PostgreSQL (Podman) | RDS t3.micro | RDS t3.small |
+| Redis | Redis (Podman) | ElastiCache t3.micro | ElastiCache t3.small |
 | ECS Tasks | N/A | 1 task (256 CPU, 512 MB) | 3 tasks (1024 CPU, 2048 MB) |
 | VPC | N/A | 2 AZs | 3 AZs with NAT Gateway |
 | Log Retention | N/A | 3 days | 30 days |

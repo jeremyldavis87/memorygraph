@@ -5,6 +5,7 @@ import os
 import uuid
 from datetime import datetime
 import asyncio
+import logging
 
 from app.core.database import get_db
 from app.models.user import User
@@ -17,6 +18,7 @@ from app.services.agent_service import NoteProcessingAgent
 from app.services.graph_client import graph_client, Triple
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 async def process_note_for_graph(note_id: int, content: str, title: str, user_id: int):
     """
@@ -224,11 +226,18 @@ async def upload_note(
             # Process with orchestrator agent
             processing_result = await agent.process_multi_note_image(file_path, config)
             
+            # Log processing result for debugging
+            logger.info(f"Processing result type: {type(processing_result)}")
+            logger.info(f"Processing result attributes: {dir(processing_result)}")
+            if hasattr(processing_result, '__dict__'):
+                logger.info(f"Processing result dict keys: {processing_result.__dict__.keys()}")
+            
             # Handle comprehensive JSON response
-            if hasattr(processing_result, 'data') and processing_result.data:
-                # Success case - comprehensive output
-                comprehensive_output = processing_result.data
-                notes_data = comprehensive_output.get("notes", [])
+            # Check if we have a ProcessingOutput object or PartialResult
+            if hasattr(processing_result, 'notes'):
+                # Success case - ProcessingOutput object
+                notes_data = processing_result.notes if isinstance(processing_result.notes, list) else [processing_result.notes]
+                comprehensive_output = processing_result.model_dump() if hasattr(processing_result, 'model_dump') else {}
                 
                 # Create multiple notes from comprehensive results
                 created_notes = []

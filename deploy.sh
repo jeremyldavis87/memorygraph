@@ -65,25 +65,25 @@ sed -i "s/memorygraph-redis.xxxxx.cache.amazonaws.com/$REDIS_ENDPOINT/g" .env.pr
 
 echo "✅ Environment files updated with actual endpoints"
 
-# Build and push Docker images
-echo "🐳 Building and pushing Docker images..."
+# Build and push Podman images
+echo "🐳 Building and pushing Podman images..."
 
 # Build backend image
 cd backend
-docker build -t memorygraph-backend:latest .
-docker tag memorygraph-backend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
+podman build -t memorygraph-backend:latest .
+podman tag memorygraph-backend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-backend:latest
 
 # Build frontend image
 cd ../frontend
-docker build -t memorygraph-frontend:latest .
-docker tag memorygraph-frontend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
+podman build -t memorygraph-frontend:latest .
+podman tag memorygraph-frontend:latest 969325212479.dkr.ecr.us-east-1.amazonaws.com/memorygraph-frontend:latest
 
-echo "✅ Docker images built and tagged"
+echo "✅ Podman images built and tagged"
 
 echo "🎉 Deployment preparation complete!"
 echo "Next steps:"
 echo "1. Create ECR repositories in AWS Console"
-echo "2. Push Docker images to ECR"
+echo "2. Push Podman images to ECR"
 echo "3. Update ECS task definitions with ECR image URIs"
 echo "4. Deploy the application"
 

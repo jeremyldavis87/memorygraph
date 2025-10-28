@@ -22,7 +22,7 @@ cd memorygraph
 
 ### Multi-Environment Architecture
 
-- **Local Development**: Run on your machine with Docker services
+- **Local Development**: Run on your machine with Podman services
 - **Dev Environment**: Deployed from `develop` branch to AWS
 - **Prod Environment**: Deployed from `main` branch to AWS
 

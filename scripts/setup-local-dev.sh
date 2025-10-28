@@ -28,15 +28,16 @@ print_error() {
 check_requirements() {
     print_status "Checking requirements..."
     
-    # Check for Docker
-    if ! command -v docker &> /dev/null; then
-        print_error "Docker is not installed. Please install Docker first."
+    # Check for Podman
+    if ! command -v podman &> /dev/null; then
+        print_error "Podman is not installed. Please install Podman first."
         exit 1
     fi
     
-    # Check for Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose is not installed. Please install Docker Compose first."
+    # Check for Podman Compose
+    if ! command -v podman-compose &> /dev/null; then
+        print_error "Podman Compose is not installed. Please install podman-compose first."
+        echo "   You can install it with: pip install podman-compose"
         exit 1
     fi
     
@@ -129,14 +130,14 @@ EOF
     print_status "Frontend setup complete!"
 }
 
-# Setup Docker services
-setup_docker() {
-    print_status "Setting up Docker services..."
+# Setup Podman services
+setup_podman() {
+    print_status "Setting up Podman services..."
     
-    # Create docker-compose.override.yml for local development
-    if [ ! -f "docker-compose.override.yml" ]; then
-        print_status "Creating docker-compose.override.yml for local development..."
-        cat > docker-compose.override.yml << EOF
+    # Create podman-compose.override.yml for local development
+    if [ ! -f "podman-compose.override.yml" ]; then
+        print_status "Creating podman-compose.override.yml for local development..."
+        cat > podman-compose.override.yml << EOF
 version: '3.8'
 
 services:
@@ -191,7 +192,7 @@ volumes:
 EOF
     fi
     
-    print_status "Docker services setup complete!"
+    print_status "Podman services setup complete!"
 }
 
 # Create development scripts
@@ -203,8 +204,8 @@ create_scripts() {
 #!/bin/bash
 echo "🚀 Starting MemoryGraph development environment..."
 
-# Start Docker services
-docker-compose up -d postgres redis
+# Start Podman services
+podman-compose up -d postgres redis
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
@@ -232,7 +233,7 @@ echo ""
 echo "Press Ctrl+C to stop all services"
 
 # Wait for user to stop
-trap "kill $BACKEND_PID $FRONTEND_PID; docker-compose down; exit" INT
+trap "kill $BACKEND_PID $FRONTEND_PID; podman-compose down; exit" INT
 wait
 EOF
 
@@ -247,8 +248,8 @@ echo "🛑 Stopping MemoryGraph development environment..."
 pkill -f "uvicorn app.main:app"
 pkill -f "npm start"
 
-# Stop Docker services
-docker-compose down
+# Stop Podman services
+podman-compose down
 
 echo "✅ Development environment stopped!"
 EOF
@@ -265,7 +266,7 @@ main() {
     check_requirements
     setup_backend
     setup_frontend
-    setup_docker
+    setup_podman
     create_scripts
     
     print_status "🎉 Setup complete!"
