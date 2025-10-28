@@ -190,6 +190,8 @@ class ExtractionAgent(BaseAgent):
     async def _extract_with_vision(self, image_path: str) -> ExtractionResult:
         """Extract text using Vision LLM"""
         try:
+            self.logger.info(f"Starting Vision LLM extraction for: {image_path}")
+            
             # Use AI service for vision extraction
             vision_result = self.ai_service.extract_text_from_note_region(
                 image_path,
@@ -199,18 +201,26 @@ class ExtractionAgent(BaseAgent):
                 "gpt-4o-mini"
             )
             
+            self.logger.info(f"Vision LLM result: success={vision_result.get('success')}")
+            
             if not vision_result.get("success"):
+                error_msg = vision_result.get("error", "Unknown error")
+                self.logger.error(f"Vision LLM extraction failed: {error_msg}")
                 return ExtractionResult(
                     text="",
                     confidence=0.0,
                     method="vision_llm_failed",
-                    raw_data={"error": vision_result.get("error", "Unknown error")}
+                    raw_data={"error": error_msg}
                 )
             
             extracted_text = vision_result["extracted_text"]
+            self.logger.info(f"Vision LLM extracted {len(extracted_text)} characters")
+            self.logger.debug(f"Extracted text preview: {extracted_text[:500]}")
             
             # Calculate confidence based on text characteristics
             confidence = self._calculate_vision_confidence(extracted_text)
+            
+            self.logger.info(f"Vision LLM confidence: {confidence}")
             
             return ExtractionResult(
                 text=extracted_text.strip(),
@@ -224,7 +234,7 @@ class ExtractionAgent(BaseAgent):
             )
             
         except Exception as e:
-            self.logger.error(f"Vision LLM extraction failed: {e}")
+            self.logger.error(f"Vision LLM extraction exception: {e}", exc_info=True)
             return ExtractionResult(
                 text="",
                 confidence=0.0,

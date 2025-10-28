@@ -1,9 +1,24 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Union
 import os
 import json
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env.development first, before Settings is initialized
+env_path = Path(__file__).parent.parent / ".env.development"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"Loaded environment from: {env_path}")
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env.development",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
+    
     PROJECT_NAME: str = "MemoryGraph"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
@@ -17,9 +32,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     
     # AI/ML
-    OPENAI_API_KEY: Optional[str] = None
-    BRAINTRUST_API_KEY: Optional[str] = None
-    OCR_MODE: str = "traditional"  # traditional, llm, or auto
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    BRAINTRUST_API_KEY: Optional[str] = os.getenv("BRAINTRUST_API_KEY")
+    OCR_MODE: str = os.getenv("OCR_MODE", "traditional")  # traditional, llm, or auto
     
     # Agent Configuration
     AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-4o-mini")
@@ -79,8 +94,4 @@ class Settings(BaseSettings):
     INSERTER_SERVICE_URL: str = os.getenv("INSERTER_SERVICE_URL", "http://localhost:8003")
     RETRIEVER_SERVICE_URL: str = os.getenv("RETRIEVER_SERVICE_URL", "http://localhost:8004")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-
 settings = Settings()

@@ -227,13 +227,33 @@ class AIService:
         """
         Process image with vision LLM to extract text and structure.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"process_with_vision_llm: image_path={image_path}, model={model}")
+        
         if not settings.OPENAI_API_KEY:
-            return {"error": "OpenAI API key not configured"}
+            error_msg = "OpenAI API key not configured"
+            logger.error(error_msg)
+            return {"error": error_msg}
         
         try:
+            # Check if image file exists
+            if not os.path.exists(image_path):
+                error_msg = f"Image file not found: {image_path}"
+                logger.error(error_msg)
+                return {"success": False, "error": error_msg}
+            
+            file_size = os.path.getsize(image_path)
+            logger.info(f"Image file size: {file_size} bytes")
+            
             # Encode image to base64
+            logger.info("Encoding image to base64...")
             with open(image_path, "rb") as image_file:
-                base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+                image_data = image_file.read()
+                base64_image = base64.b64encode(image_data).decode('utf-8')
+            
+            logger.info(f"Base64 encoded image size: {len(base64_image)} characters")
             
             # Prepare the message
             messages = [
@@ -254,10 +274,15 @@ class AIService:
                 }
             ]
             
+            logger.info(f"Prepared messages for API call")
+            
             if not self.client:
-                return {"error": "OpenAI client not initialized"}
+                error_msg = "OpenAI client not initialized"
+                logger.error(error_msg)
+                return {"error": error_msg}
             
             # Call OpenAI Vision API (automatically traced by Braintrust wrapper)
+            logger.info(f"Calling OpenAI Vision API with model={model}...")
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -265,14 +290,21 @@ class AIService:
                 temperature=0.1
             )
             
+            result_text = response.choices[0].message.content.strip()
+            logger.info(f"OpenAI Vision API call succeeded. Response length: {len(result_text)}")
+            logger.debug(f"Response preview: {result_text[:200]}")
+            
             return {
                 "success": True,
-                "text": response.choices[0].message.content.strip(),
+                "text": result_text,
                 "model_used": model
             }
             
         except Exception as e:
-            print(f"Vision LLM processing failed: {e}")
+            error_msg = f"Vision LLM processing failed: {e}"
+            logger.error(error_msg, exc_info=True)
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "error": str(e)
@@ -334,6 +366,12 @@ class AIService:
         """
         Extract text from a specific note region using vision LLM.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"extract_text_from_note_region called with image_path={image_path}")
+        logger.info(f"Model: {model}")
+        
         prompt = f"""
         Extract all text from this note region. Pay special attention to:
         1. Preserve the exact formatting (bullet points, numbered lists, checkboxes)
@@ -347,13 +385,21 @@ class AIService:
         Return the extracted text exactly as written, preserving all formatting.
         """
         
+        logger.info(f"Calling process_with_vision_llm...")
         result = self.process_with_vision_llm(image_path, prompt, model)
         
+        logger.info(f"process_with_vision_llm returned: success={result.get('success')}")
+        
         if result.get("success"):
+            extracted_text = result["text"]
+            logger.info(f"Extracted text length: {len(extracted_text)}")
+            logger.debug(f"Extracted text: {extracted_text[:200]}")
+            
             return {
                 "success": True,
-                "extracted_text": result["text"],
+                "extracted_text": extracted_text,
                 "model_used": model
             }
         else:
+            logger.error(f"Vision LLM extraction failed: {result.get('error')}")
             return result
