@@ -73,10 +73,10 @@ class OrchestratorAgent(BaseAgent):
                                          inputs={"image_path": image_path, "config": config}) as span:
                     try:
                         result = await self._process_with_tracing(span, image_path, config, start_time)
-                        braintrust.update_span(output=result)
+                        span.update(output=result, exported=True)
                         return result
                     except Exception as e:
-                        braintrust.update_span(error=str(e))
+                        span.update(error=str(e), exported=True)
                         raise
             except Exception as e:
                 self.logger.warning(f"Braintrust initialization failed, processing without tracing: {e}")
