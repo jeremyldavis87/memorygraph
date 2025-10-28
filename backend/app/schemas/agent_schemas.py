@@ -60,7 +60,7 @@ class Title(BaseModel):
     """Title information"""
     text: str
     format: str
-    position: str
+    position: Optional[int] = None
 
 
 class TodoItem(BaseModel):
