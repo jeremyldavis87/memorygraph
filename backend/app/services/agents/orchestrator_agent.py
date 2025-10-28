@@ -12,6 +12,12 @@ import time
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 
+try:
+    import braintrust
+    BRAINTRUST_AVAILABLE = True
+except ImportError:
+    BRAINTRUST_AVAILABLE = False
+
 from .base_agent import BaseAgent, PartialResult
 from .image_processing_agent import ImageProcessingAgent
 from .separation_agent import SeparationAgent, NoteRegion
@@ -59,6 +65,106 @@ class OrchestratorAgent(BaseAgent):
         """
         start_time = time.time()
         
+        # Start Braintrust logging if enabled
+        if self.braintrust_enabled and BRAINTRUST_AVAILABLE:
+            from braintrust import experiment
+            with experiment.start_span(
+                name="orchestrator_process",
+                inputs={"image_path": image_path, "config": config}
+            ) as span:
+                try:
+                    result = await self._process_with_tracing(span, image_path, config, start_time)
+                    span.log(output=result)
+                    return result
+                except Exception as e:
+                    span.log(error=str(e))
+                    raise
+        
+        # Process without Braintrust
+        return await self._process_without_tracing(image_path, config, start_time)
+    
+    async def _process_with_tracing(self, span, image_path: str, config: Dict[str, Any], start_time: float) -> Union[ProcessingOutput, PartialResult]:
+        """Process with Braintrust tracing enabled"""
+        try:
+            # Phase 1: Image preprocessing
+            self.logger.info("Starting image preprocessing")
+            image_result = await self.image_agent.process(image_path)
+            
+            if isinstance(image_result, PartialResult):
+                span.log(stage="image_preprocessing", status="failed", error=image_result.error)
+                return self._create_error_result(image_path, "Image preprocessing failed", image_result.error)
+            
+            processed_path = image_result["processed_path"]
+            color_info = image_result["color_info"]
+            quality_metrics = image_result["quality_metrics"]
+            
+            span.log(stage="image_preprocessing", status="success", quality=quality_metrics["overall_quality"])
+            
+            # Phase 2: Note separation
+            self.logger.info("Starting note separation")
+            separation_result = await self.separation_agent.process(image_path)
+            
+            if isinstance(separation_result, PartialResult):
+                span.log(stage="note_separation", status="failed", error=separation_result.error)
+                return self._create_error_result(image_path, "Note separation failed", separation_result.error)
+            
+            note_regions = separation_result
+            span.log(stage="note_separation", status="success", regions_detected=len(note_regions))
+            
+            # Phase 3: Process each note region
+            self.logger.info(f"Processing {len(note_regions)} note regions")
+            processed_notes = []
+            
+            for i, region in enumerate(note_regions):
+                try:
+                    note_result = await self._process_single_note(
+                        image_path, region, color_info, quality_metrics, config, i + 1
+                    )
+                    processed_notes.append(note_result)
+                except Exception as e:
+                    self.logger.error(f"Failed to process note region {i + 1}: {e}")
+                    # Create error note
+                    error_note = self._create_error_note(f"note_{i+1:03d}", str(e))
+                    processed_notes.append(error_note)
+            
+            # Phase 4: Generate comprehensive output
+            processing_time_ms = int((time.time() - start_time) * 1000)
+            
+            span.log(stage="comprehensive_output_generation", notes_count=len(processed_notes), processing_time_ms=processing_time_ms)
+            
+            comprehensive_output = self._generate_comprehensive_output(
+                image_path, processed_notes, processing_time_ms, image_result
+            )
+            
+            # Log final metrics
+            self.log_metric("total_notes_processed", len(processed_notes))
+            self.log_metric("processing_time_ms", processing_time_ms)
+            self.log_metric("success_rate", len([n for n in processed_notes if n.get("success", True)]) / len(processed_notes))
+            
+            span.log(
+                total_notes_processed=len(processed_notes),
+                average_confidence=sum(note.get("quality_metrics", {}).get("overall_confidence", 0) for note in processed_notes if note.get("success")) / len([n for n in processed_notes if n.get("success")]) if any(note.get("success") for note in processed_notes) else 0
+            )
+            
+            return comprehensive_output
+            
+        except Exception as e:
+            self.logger.error(f"Orchestrator processing failed: {e}")
+            self.logger.exception("Full traceback:")
+            
+            # Even if ProcessingOutput validation fails, return the processed notes as raw data
+            if isinstance(e, (ValueError, TypeError)) and "validation error" in str(e).lower():
+                self.logger.warning("ProcessingOutput validation failed, returning raw notes data")
+                return self.create_partial_result(
+                    data={"notes": processed_notes, "raw_data": True},
+                    error=f"Schema validation failed: {str(e)}",
+                    warnings=["ProcessingOutput schema validation failed, using raw data format"]
+                )
+            
+            return self._create_error_result(image_path, "Orchestrator processing failed", str(e))
+    
+    async def _process_without_tracing(self, image_path: str, config: Dict[str, Any], start_time: float) -> Union[ProcessingOutput, PartialResult]:
+        """Process without Braintrust tracing (original implementation)"""
         try:
             # Phase 1: Image preprocessing
             self.logger.info("Starting image preprocessing")
