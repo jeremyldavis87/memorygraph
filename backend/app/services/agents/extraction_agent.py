@@ -9,7 +9,7 @@ import asyncio
 import cv2
 import numpy as np
 import pytesseract
-from typing import Dict, Any, Optional, Union, Tuple
+from typing import Dict, Any, Optional, Union, Tuple, List
 from difflib import SequenceMatcher
 import re
 

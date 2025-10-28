@@ -7,7 +7,7 @@ using OpenCV and scikit-learn for optimal text extraction.
 
 import cv2
 import numpy as np
-from typing import Dict, Any, Tuple, Optional, List
+from typing import Dict, Any, Tuple, Optional, List, Union
 from PIL import Image
 import os
 
