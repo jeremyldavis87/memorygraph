@@ -190,7 +190,7 @@ def delete_note(
 async def upload_note(
     file: UploadFile = File(...),
     category_id: Optional[int] = Form(None),
-    ocr_mode: str = Form("traditional"),
+    ocr_mode: str = Form("llm"),  # Default to LLM only for better results
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

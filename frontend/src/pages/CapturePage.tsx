@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 export const CapturePage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [ocrMode, setOcrMode] = useState('traditional');
+  const [ocrMode, setOcrMode] = useState('llm');  // Default to LLM for better results
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
