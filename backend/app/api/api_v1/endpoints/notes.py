@@ -238,8 +238,16 @@ async def upload_note(
                 # Success case - ProcessingOutput object
                 notes_data = processing_result.notes if isinstance(processing_result.notes, list) else [processing_result.notes]
                 comprehensive_output = processing_result.model_dump() if hasattr(processing_result, 'model_dump') else {}
-                
-                # Create multiple notes from comprehensive results
+            elif hasattr(processing_result, 'data') and processing_result.data:
+                # PartialResult with raw data
+                logger.warning("Handling PartialResult with raw notes data")
+                notes_data = processing_result.data.get("notes", [])
+                comprehensive_output = processing_result.data
+            else:
+                notes_data = []
+            
+            # Create multiple notes from comprehensive results
+            if notes_data:
                 created_notes = []
                 parent_note_id = None
                 

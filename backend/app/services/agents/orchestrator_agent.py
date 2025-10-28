@@ -112,6 +112,17 @@ class OrchestratorAgent(BaseAgent):
             
         except Exception as e:
             self.logger.error(f"Orchestrator processing failed: {e}")
+            self.logger.exception("Full traceback:")
+            
+            # Even if ProcessingOutput validation fails, return the processed notes as raw data
+            if isinstance(e, (ValueError, TypeError)) and "validation error" in str(e).lower():
+                self.logger.warning("ProcessingOutput validation failed, returning raw notes data")
+                return self.create_partial_result(
+                    data={"notes": processed_notes, "raw_data": True},
+                    error=f"Schema validation failed: {str(e)}",
+                    warnings=["ProcessingOutput schema validation failed, using raw data format"]
+                )
+            
             return self._create_error_result(image_path, "Orchestrator processing failed", str(e))
     
     async def _process_single_note(self, image_path: str, region: NoteRegion, 
