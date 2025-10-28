@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
@@ -14,6 +14,7 @@ import { NotesPage } from './pages/NotesPage';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { logger } from './utils/logger';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,13 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useEffect(() => {
+    logger.info('App initialized', {
+      apiUrl: process.env.REACT_APP_API_URL,
+      environment: process.env.NODE_ENV,
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

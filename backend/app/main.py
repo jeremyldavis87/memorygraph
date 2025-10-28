@@ -6,6 +6,11 @@ import os
 from app.core.config import settings
 from app.api.api_v1.api import api_router
 from app.core.database import engine, Base
+from app.core.logging_config import setup_logging, log_request, log_info
+
+# Set up logging
+setup_logging(log_level=settings.LOG_LEVEL)
+log_info("Starting MemoryGraph API", version=settings.VERSION)
 
 # Create database tables only if not in test environment
 if not os.getenv("TESTING"):
@@ -18,8 +23,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+# Add request logging middleware
+app.middleware("http")(log_request)
+
 # Set up CORS
-print(f"CORS Origins configured: {settings.BACKEND_CORS_ORIGINS}")
+log_info("CORS Origins configured", origins=settings.BACKEND_CORS_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -37,8 +45,10 @@ if os.path.exists("uploads"):
 
 @app.get("/")
 async def root():
+    log_info("Root endpoint accessed")
     return {"message": "MemoryGraph API", "version": settings.VERSION}
 
 @app.get("/health")
 async def health_check():
+    log_info("Health check endpoint accessed")
     return {"status": "healthy"}
