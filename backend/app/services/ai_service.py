@@ -91,7 +91,7 @@ class AIService:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=150,
+                max_completion_tokens=150,
                 temperature=0.3
             )
             return response.choices[0].message.content.strip()
@@ -124,7 +124,7 @@ class AIService:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
+                max_completion_tokens=300,
                 temperature=0.1
             )
             
@@ -162,7 +162,7 @@ class AIService:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
+                max_completion_tokens=300,
                 temperature=0.1
             )
             
@@ -197,7 +197,7 @@ class AIService:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=100,
+                max_completion_tokens=100,
                 temperature=0.3
             )
             
@@ -287,12 +287,20 @@ class AIService:
             
             # Call OpenAI Vision API (automatically traced by Braintrust wrapper)
             logger.info(f"Calling OpenAI Vision API with model={model}...")
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=2000,
-                temperature=0.1
-            )
+            # gpt-5-mini only supports default temperature (1), other models support custom values
+            if model == "gpt-5-mini":
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_completion_tokens=2000
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_completion_tokens=2000,
+                    temperature=0.1
+                )
             
             result_text = response.choices[0].message.content.strip()
             logger.info(f"OpenAI Vision API call succeeded. Response length: {len(result_text)}")
@@ -385,16 +393,21 @@ class AIService:
         logger.info(f"Model: {model}")
         
         prompt = f"""
-        Extract all text from this note region. Pay special attention to:
-        1. Preserve the exact formatting (bullet points, numbered lists, checkboxes)
-        2. Look for titles marked with ##Title## format or underlined text
-        3. Identify action items with checkboxes (☐, ☑, [ ], [x])
-        4. Preserve special characters and symbols
-        5. Maintain line breaks and spacing
+        Extract all text from this note or document image. This is a handwritten or printed note - read it carefully and accurately.
+
+        CRITICAL INSTRUCTIONS:
+        1. Read every word and character carefully - this is OCR/vision extraction, accuracy is paramount
+        2. For handwritten text: carefully distinguish similar characters (a/o, i/l, n/r, etc.)
+        3. Preserve the exact formatting (bullet points, numbered lists, checkboxes)
+        4. Look for titles marked with ##Title## format or underlined/bolded text
+        5. Identify action items with checkboxes (☐, ☑, [ ], [x])
+        6. Preserve special characters, symbols, and punctuation exactly as written
+        7. Maintain line breaks, spacing, and paragraph structure
+        8. If text is unclear, do your best but don't guess - mark with [?] if truly illegible
 
         Note description: {region_description}
 
-        Return the extracted text exactly as written, preserving all formatting.
+        Return ONLY the extracted text as plain text. Do NOT wrap the text in markdown code blocks (```) or any other formatting. Return the raw text content only, exactly as it appears in the image.
         """
         
         logger.info(f"Calling process_with_vision_llm...")
@@ -404,6 +417,16 @@ class AIService:
         
         if result.get("success"):
             extracted_text = result["text"]
+            
+            # Clean up any markdown code blocks that the LLM might have added
+            if extracted_text.startswith("```") and extracted_text.endswith("```"):
+                # Remove code block markers
+                lines = extracted_text.split('\n')
+                if len(lines) > 2:
+                    extracted_text = '\n'.join(lines[1:-1])
+                else:
+                    extracted_text = extracted_text.replace("```", "").strip()
+            
             logger.info(f"Extracted text length: {len(extracted_text)}")
             logger.debug(f"Extracted text: {extracted_text[:200]}")
             

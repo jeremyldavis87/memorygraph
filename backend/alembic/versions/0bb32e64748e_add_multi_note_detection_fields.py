@@ -33,7 +33,7 @@ def upgrade() -> None:
     op.create_foreign_key('fk_notes_parent_note_id', 'notes', 'notes', ['parent_note_id'], ['id'])
     
     # Set default values for existing users
-    op.execute("UPDATE users SET vision_model_preference = 'gpt-4o-mini' WHERE vision_model_preference IS NULL")
+    op.execute("UPDATE users SET vision_model_preference = 'gpt-5-mini' WHERE vision_model_preference IS NULL")
     op.execute("UPDATE users SET ocr_confidence_threshold = 90 WHERE ocr_confidence_threshold IS NULL")
     op.execute("UPDATE users SET multi_note_detection_enabled = true WHERE multi_note_detection_enabled IS NULL")
 

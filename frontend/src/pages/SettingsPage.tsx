@@ -26,7 +26,7 @@ export const SettingsPage: React.FC = () => {
       default_ocr_mode: user?.default_ocr_mode || 'traditional',
       auto_capture: user?.auto_capture || true,
       ai_processing_enabled: user?.ai_processing_enabled || true,
-      vision_model_preference: user?.vision_model_preference || 'gpt-4o-mini',
+      vision_model_preference: user?.vision_model_preference || 'gpt-5-mini',
       ocr_confidence_threshold: user?.ocr_confidence_threshold || 90,
       multi_note_detection_enabled: user?.multi_note_detection_enabled || true,
     }
@@ -198,8 +198,8 @@ export const SettingsPage: React.FC = () => {
                       {...register('vision_model_preference')}
                       className="input"
                     >
-                      <option value="gpt-4o-mini">GPT-4o Mini (Fast, Cost-effective)</option>
-                      <option value="gpt-4o">GPT-4o (High Quality)</option>
+                      <option value="gpt-5-mini">gpt-5 Mini (Fast, Cost-effective)</option>
+                      <option value="gpt-5">gpt-5 (High Quality)</option>
                       <option value="gpt-4-vision-preview">GPT-4 Vision Preview (Legacy)</option>
                     </select>
                     <p className="text-xs text-gray-500 mt-1">

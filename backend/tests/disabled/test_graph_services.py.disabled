@@ -54,7 +54,7 @@ def mock_graph_services():
                 {"subject": "Project Alpha", "predicate": "PART_OF_PROJECT", "object": "John Smith", "confidence": 0.8}
             ],
             "processing_time": 1.5,
-            "model_used": "gpt-4o-nano"
+            "model_used": "gpt-5-nano"
         })
         
         # Mock bulk_insert_triples

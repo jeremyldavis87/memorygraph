@@ -126,15 +126,15 @@ class ProcessingDetails(BaseModel):
 class Note(BaseModel):
     """Individual note with comprehensive metadata"""
     note_id: str
-    spatial_position: SpatialPosition
-    visual_metadata: VisualMetadata
+    spatial_position: Optional[SpatialPosition] = None
+    visual_metadata: Optional[VisualMetadata] = None
     qr_codes: List[QRCode] = []
-    text_content: TextContent
-    structure: Structure
-    tags: Tags
-    entities: Entities
-    quality_metrics: QualityMetrics
-    processing_details: ProcessingDetails
+    text_content: Optional[TextContent] = None
+    structure: Optional[Structure] = None
+    tags: Optional[Tags] = None
+    entities: Optional[Entities] = None
+    quality_metrics: Optional[QualityMetrics] = None
+    processing_details: Optional[ProcessingDetails] = None
 
 
 class ImageMetadata(BaseModel):

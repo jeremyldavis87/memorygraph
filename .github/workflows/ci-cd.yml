@@ -95,7 +95,7 @@ jobs:
         NEO4J_PASSWORD: JomXr6Xl1bPVwqogQvAANbOZMnzYB7n5GqM39AV8nok
         NEO4J_DATABASE: neo4j
         GRAPH_EXTRACTION_LLM_PROVIDER: openai
-        GRAPH_EXTRACTION_MODEL: gpt-4o-nano
+        GRAPH_EXTRACTION_MODEL: gpt-5-nano
         EXTRACTOR_SERVICE_URL: http://localhost:8002
         INSERTER_SERVICE_URL: http://localhost:8003
         RETRIEVER_SERVICE_URL: http://localhost:8004

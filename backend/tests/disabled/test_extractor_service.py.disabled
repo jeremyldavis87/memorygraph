@@ -132,18 +132,18 @@ def test_triple_extractor_initialization():
     """Test TripleExtractor initialization"""
     with patch.dict(os.environ, {
         'GRAPH_EXTRACTION_LLM_PROVIDER': 'openai',
-        'GRAPH_EXTRACTION_MODEL': 'gpt-4o-nano',
+        'GRAPH_EXTRACTION_MODEL': 'gpt-5-nano',
         'OPENAI_API_KEY': 'test-key'
     }):
         extractor = TripleExtractor()
         assert extractor.llm_provider == 'openai'
-        assert extractor.model_name == 'gpt-4o-nano'
+        assert extractor.model_name == 'gpt-5-nano'
 
 def test_triple_extractor_unsupported_provider():
     """Test TripleExtractor with unsupported LLM provider"""
     with patch.dict(os.environ, {
         'GRAPH_EXTRACTION_LLM_PROVIDER': 'unsupported',
-        'GRAPH_EXTRACTION_MODEL': 'gpt-4o-nano',
+        'GRAPH_EXTRACTION_MODEL': 'gpt-5-nano',
         'OPENAI_API_KEY': 'test-key'
     }):
         with pytest.raises(ValueError, match="Unsupported LLM provider"):

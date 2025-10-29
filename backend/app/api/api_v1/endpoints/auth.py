@@ -135,7 +135,7 @@ def update_user_settings(
     """
     # Validate vision model preference
     if settings_update.vision_model_preference:
-        valid_models = ["gpt-4o-mini", "gpt-4o", "gpt-4-vision-preview"]
+        valid_models = ["gpt-5-mini", "gpt-5", "gpt-4-vision-preview"]
         if settings_update.vision_model_preference not in valid_models:
             raise HTTPException(
                 status_code=400,

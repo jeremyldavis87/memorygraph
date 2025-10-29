@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     OCR_MODE: str = os.getenv("OCR_MODE", "llm")  # traditional, llm, or auto - default to LLM for better results
     
     # Agent Configuration
-    AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-4o-mini")
+    AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-5-mini")
     AGENT_OCR_CONFIDENCE_THRESHOLD: int = int(os.getenv("AGENT_OCR_CONFIDENCE_THRESHOLD", "90"))
     AGENT_PROCESSING_TIMEOUT: int = int(os.getenv("AGENT_PROCESSING_TIMEOUT", "30"))  # seconds
     AGENT_PARALLEL_PROCESSING_LIMIT: int = int(os.getenv("AGENT_PARALLEL_PROCESSING_LIMIT", "5"))

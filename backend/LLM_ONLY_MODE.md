@@ -41,7 +41,7 @@ const [ocrMode, setOcrMode] = useState('llm');  // Default to LLM for better res
 ## How It Works Now
 
 ### LLM Mode (`ocr_mode = "llm"`)
-- **Uses**: Vision LLM (GPT-4o-mini) ONLY
+- **Uses**: Vision LLM (gpt-5-mini) ONLY
 - **Skips**: Traditional Tesseract OCR completely
 - **Pros**: 
   - Much better at reading handwritten text

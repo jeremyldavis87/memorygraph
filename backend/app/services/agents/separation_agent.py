@@ -45,7 +45,7 @@ class SeparationAgent(BaseAgent):
     Uses parallel execution of three detection methods:
     1. QR code detection with pyzbar
     2. OpenCV contour detection
-    3. Vision LLM analysis (gpt-4o-mini)
+    3. Vision LLM analysis (gpt-5-mini)
     
     Selects the method with highest confidence for optimal results.
     """

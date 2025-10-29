@@ -225,7 +225,7 @@ resource "aws_ecs_task_definition" "extractor_service" {
         },
         {
           name  = "GRAPH_EXTRACTION_MODEL"
-          value = "gpt-4o-nano"
+          value = "gpt-5-nano"
         }
       ]
 

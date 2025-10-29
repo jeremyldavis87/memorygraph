@@ -34,7 +34,7 @@ class ExtractionResult(BaseModel):
 class TripleExtractor:
     def __init__(self):
         self.llm_provider = os.getenv("GRAPH_EXTRACTION_LLM_PROVIDER", "openai")
-        self.model_name = os.getenv("GRAPH_EXTRACTION_MODEL", "gpt-4o-nano")
+        self.model_name = os.getenv("GRAPH_EXTRACTION_MODEL", "gpt-5-nano")
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         
         # Initialize LLM

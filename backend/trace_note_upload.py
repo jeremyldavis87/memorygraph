@@ -27,11 +27,24 @@ from app.core.config import settings
 async def test_note_upload():
     """Test the full note upload and processing flow"""
     
-    # Test image path
-    image_path = "backend/tests/test-files/26372.jpg"
+    # Test image path - try multiple possible locations
+    possible_paths = [
+        "tests/test-files/26372.jpg",
+        "backend/tests/test-files/26372.jpg",
+        "/app/tests/test-files/26372.jpg",
+        "/app/backend/tests/test-files/26372.jpg"
+    ]
     
-    if not os.path.exists(image_path):
-        logger.error(f"Test image not found: {image_path}")
+    image_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            image_path = path
+            break
+    
+    if not image_path:
+        logger.error(f"Test image not found. Tried: {possible_paths}")
+        logger.info(f"Current directory: {os.getcwd()}")
+        logger.info(f"Files in tests/test-files: {os.listdir('tests/test-files') if os.path.exists('tests/test-files') else 'N/A'}")
         return
     
     logger.info("=" * 80)
