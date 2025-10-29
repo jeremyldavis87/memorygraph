@@ -89,9 +89,8 @@ class AIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.TEXT_AI_MODEL,
                 messages=[{"role": "user", "content": prompt}],
-                max_completion_tokens=150,
                 temperature=0.3
             )
             return response.choices[0].message.content.strip()
@@ -122,9 +121,8 @@ class AIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.TEXT_AI_MODEL,
                 messages=[{"role": "user", "content": prompt}],
-                max_completion_tokens=300,
                 temperature=0.1
             )
             
@@ -160,7 +158,7 @@ class AIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.TEXT_AI_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 max_completion_tokens=300,
                 temperature=0.1
@@ -195,7 +193,7 @@ class AIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.TEXT_AI_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 max_completion_tokens=100,
                 temperature=0.3

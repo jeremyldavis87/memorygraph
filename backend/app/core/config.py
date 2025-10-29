@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     
     # Agent Configuration
     AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-5-mini")
+    TEXT_AI_MODEL: str = os.getenv("TEXT_AI_MODEL", "gpt-4o-mini")
     AGENT_OCR_CONFIDENCE_THRESHOLD: int = int(os.getenv("AGENT_OCR_CONFIDENCE_THRESHOLD", "90"))
     AGENT_PROCESSING_TIMEOUT: int = int(os.getenv("AGENT_PROCESSING_TIMEOUT", "30"))  # seconds
     AGENT_PARALLEL_PROCESSING_LIMIT: int = int(os.getenv("AGENT_PARALLEL_PROCESSING_LIMIT", "5"))
