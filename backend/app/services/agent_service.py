@@ -10,11 +10,12 @@ from app.core.config import settings
 
 
 class NoteProcessingAgent:
-    def __init__(self, model_name: str = "gpt-4o-mini"):
+    def __init__(self, model_name: str = None):
         """
         Initialize the note processing agent with the new multi-agent architecture.
         """
-        self.model_name = model_name
+        # Use settings.AGENT_VISION_MODEL if not provided
+        self.model_name = model_name or settings.AGENT_VISION_MODEL
         self.orchestrator = OrchestratorAgent()
     
     async def process_multi_note_image(self, image_path: str, config: Dict[str, Any] = None) -> Union[ProcessingOutput, PartialResult]:

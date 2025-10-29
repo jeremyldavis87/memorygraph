@@ -15,6 +15,7 @@ import re
 
 from .base_agent import BaseAgent, PartialResult
 from app.services.ai_service import AIService
+from app.core.config import settings
 
 
 class ExtractionResult:
@@ -198,7 +199,7 @@ class ExtractionAgent(BaseAgent):
                 "Extract all text from this note, preserving formatting and structure. "
                 "Pay special attention to titles marked with ##Title## format, "
                 "bullet points, numbered lists, and checkboxes.",
-                "gpt-4o-mini"
+                settings.AGENT_VISION_MODEL
             )
             
             self.logger.info(f"Vision LLM result: success={vision_result.get('success')}")
@@ -227,7 +228,7 @@ class ExtractionAgent(BaseAgent):
                 confidence=confidence,
                 method="vision_llm",
                 raw_data={
-                    "model_used": vision_result.get("model_used", "gpt-4o-mini"),
+                    "model_used": vision_result.get("model_used", settings.AGENT_VISION_MODEL),
                     "word_count": len(extracted_text.split()),
                     "character_count": len(extracted_text)
                 }

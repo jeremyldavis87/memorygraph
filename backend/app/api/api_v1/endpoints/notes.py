@@ -16,6 +16,7 @@ from app.services.ocr_service import OCRService
 from app.services.ai_service import AIService
 from app.services.agent_service import NoteProcessingAgent
 from app.services.graph_client import graph_client, Triple
+from app.core.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -216,10 +217,12 @@ async def upload_note(
         # Check if multi-note detection is enabled for user
         if current_user.multi_note_detection_enabled:
             # Use new agent architecture for multi-note processing
-            agent = NoteProcessingAgent(current_user.vision_model_preference)
+            # Use user's preference or fall back to settings default
+            user_model = current_user.vision_model_preference or settings.AGENT_VISION_MODEL
+            agent = NoteProcessingAgent(user_model)
             config = {
                 "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
-                "vision_model_preference": current_user.vision_model_preference,
+                "vision_model_preference": user_model,
                 "source_type": "rocketbook",  # Indicate this is a Rocketbook for special processing
                 "ocr_mode": ocr_mode  # Pass ocr_mode to agent
             }

@@ -22,6 +22,7 @@ except ImportError:
 
 from .base_agent import BaseAgent, PartialResult
 from app.services.ai_service import AIService
+from app.core.config import settings
 
 
 class NoteRegion:
@@ -209,7 +210,7 @@ class SeparationAgent(BaseAgent):
         try:
             # Use AI service for vision analysis
             vision_result = self.ai_service.detect_note_regions_with_vision(
-                image_path, "gpt-4o-mini"
+                image_path, settings.AGENT_VISION_MODEL
             )
             
             if not vision_result.get("success"):

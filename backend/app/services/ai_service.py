@@ -223,12 +223,16 @@ class AIService:
             }
         }
     
-    def process_with_vision_llm(self, image_path: str, prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+    def process_with_vision_llm(self, image_path: str, prompt: str, model: str = None) -> Dict[str, Any]:
         """
         Process image with vision LLM to extract text and structure.
         """
         import logging
         logger = logging.getLogger(__name__)
+        
+        # Use settings.AGENT_VISION_MODEL if not provided
+        if model is None:
+            model = settings.AGENT_VISION_MODEL
         
         logger.info(f"process_with_vision_llm: image_path={image_path}, model={model}")
         
@@ -310,10 +314,14 @@ class AIService:
                 "error": str(e)
             }
     
-    def detect_note_regions_with_vision(self, image_path: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+    def detect_note_regions_with_vision(self, image_path: str, model: str = None) -> Dict[str, Any]:
         """
         Use vision LLM to detect and describe note regions in a multi-note image.
         """
+        # Use settings.AGENT_VISION_MODEL if not provided
+        if model is None:
+            model = settings.AGENT_VISION_MODEL
+        
         prompt = """
         Analyze this image and identify all individual notes. For each note you can see:
         1. Count the total number of notes
@@ -362,12 +370,16 @@ class AIService:
         else:
             return result
     
-    def extract_text_from_note_region(self, image_path: str, region_description: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+    def extract_text_from_note_region(self, image_path: str, region_description: str, model: str = None) -> Dict[str, Any]:
         """
         Extract text from a specific note region using vision LLM.
         """
         import logging
         logger = logging.getLogger(__name__)
+        
+        # Use settings.AGENT_VISION_MODEL if not provided
+        if model is None:
+            model = settings.AGENT_VISION_MODEL
         
         logger.info(f"extract_text_from_note_region called with image_path={image_path}")
         logger.info(f"Model: {model}")

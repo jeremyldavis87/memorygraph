@@ -8,6 +8,7 @@ Includes both comprehensive and simplified versions for different use cases.
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
+from app.core.config import settings
 
 
 class BoundingBox(BaseModel):
@@ -117,7 +118,7 @@ class ProcessingDetails(BaseModel):
     """Processing details"""
     preprocessing_applied: List[str] = []
     ocr_engine: str = "tesseract"
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = Field(default_factory=lambda: settings.AGENT_VISION_MODEL)
     llm_tokens_used: int = 0
     post_processing_corrections: int = 0
 

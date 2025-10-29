@@ -73,13 +73,13 @@ async def test_agent_processing():
         
         # Initialize the agent
         logger.info("\nInitializing NoteProcessingAgent...")
-        agent = NoteProcessingAgent("gpt-4o-mini")
+        agent = NoteProcessingAgent()  # Will use settings.AGENT_VISION_MODEL
         logger.info("Agent initialized successfully")
         
         # Configuration
         config = {
             "ocr_mode": "auto",  # Use hybrid mode
-            "vision_model_preference": "gpt-4o-mini",
+            "vision_model_preference": settings.AGENT_VISION_MODEL,
             "ocr_confidence_threshold": 0.5,
             "source_type": "rocketbook"
         }
