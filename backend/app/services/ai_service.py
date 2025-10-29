@@ -88,11 +88,18 @@ class AIService:
             return ""
         
         try:
-            response = self.client.chat.completions.create(
-                model=settings.TEXT_AI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3
-            )
+            # gpt-5 models only support default temperature (1), other models support custom values
+            if settings.TEXT_AI_MODEL in ["gpt-5", "gpt-5-nano", "gpt-5-mini"]:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3
+                )
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Summary generation failed: {e}")
@@ -120,11 +127,18 @@ class AIService:
             return []
         
         try:
-            response = self.client.chat.completions.create(
-                model=settings.TEXT_AI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1
-            )
+            # gpt-5 models only support default temperature (1), other models support custom values
+            if settings.TEXT_AI_MODEL in ["gpt-5", "gpt-5-nano", "gpt-5-mini"]:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1
+                )
             
             result = response.choices[0].message.content.strip()
             # Try to parse JSON
@@ -157,12 +171,20 @@ class AIService:
             return []
         
         try:
-            response = self.client.chat.completions.create(
-                model=settings.TEXT_AI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_completion_tokens=300,
-                temperature=0.1
-            )
+            # gpt-5 models only support default temperature (1), other models support custom values
+            if settings.TEXT_AI_MODEL in ["gpt-5", "gpt-5-nano", "gpt-5-mini"]:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_completion_tokens=300
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_completion_tokens=300,
+                    temperature=0.1
+                )
             
             result = response.choices[0].message.content.strip()
             action_items = json.loads(result)
@@ -192,12 +214,20 @@ class AIService:
             return []
         
         try:
-            response = self.client.chat.completions.create(
-                model=settings.TEXT_AI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_completion_tokens=100,
-                temperature=0.3
-            )
+            # gpt-5 models only support default temperature (1), other models support custom values
+            if settings.TEXT_AI_MODEL in ["gpt-5", "gpt-5-nano", "gpt-5-mini"]:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_completion_tokens=100
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model=settings.TEXT_AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_completion_tokens=100,
+                    temperature=0.3
+                )
             
             result = response.choices[0].message.content.strip()
             tags = json.loads(result)
