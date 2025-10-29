@@ -113,6 +113,16 @@ class ExtractionAgent(BaseAgent):
                 # Only use Vision LLM
                 self.logger.info("Using LLM mode (Vision LLM only)")
                 llm_result = await self._extract_with_vision(region_path)
+                
+                # In LLM-only mode, fail hard if Vision LLM fails
+                if llm_result.confidence == 0.0 or not llm_result.text or len(llm_result.text.strip()) == 0:
+                    error_msg = llm_result.raw_data.get("error", "Vision LLM extraction failed")
+                    self.logger.error(f"LLM-only mode failed: {error_msg}")
+                    return self.create_partial_result(
+                        error=f"Vision LLM extraction failed in LLM-only mode: {error_msg}",
+                        data={"image_path": region_path, "ocr_mode": ocr_mode}
+                    )
+                
                 return HybridResult(
                     text=llm_result.text,
                     confidence=llm_result.confidence,

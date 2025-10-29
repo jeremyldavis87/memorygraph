@@ -110,7 +110,7 @@ class OrchestratorAgent(BaseAgent):
             
             # Phase 2: Note separation
             self.logger.info("Starting note separation")
-            separation_result = await self.separation_agent.process(image_path)
+            separation_result = await self.separation_agent.process(image_path, config)
             
             if isinstance(separation_result, PartialResult):
                 # span.log_metadata(stage="note_separation", status="failed", error=separation_result.error)
@@ -187,7 +187,7 @@ class OrchestratorAgent(BaseAgent):
             
             # Phase 2: Note separation
             self.logger.info("Starting note separation")
-            separation_result = await self.separation_agent.process(image_path)
+            separation_result = await self.separation_agent.process(image_path, config)
             
             if isinstance(separation_result, PartialResult):
                 return self._create_error_result(image_path, "Note separation failed", separation_result.error)
@@ -250,6 +250,14 @@ class OrchestratorAgent(BaseAgent):
         
         if isinstance(extraction_result, PartialResult):
             return self._create_error_note(f"note_{note_id:03d}", extraction_result.error)
+        
+        # Check if extraction produced empty text - this indicates failure
+        if not extraction_result.text or len(extraction_result.text.strip()) == 0:
+            error_msg = f"Text extraction failed: {extraction_result.extraction_method}"
+            if hasattr(extraction_result, 'raw_data') and extraction_result.raw_data.get('error'):
+                error_msg += f" - {extraction_result.raw_data.get('error')}"
+            self.logger.error(f"Empty text extracted for note {note_id}: {error_msg}")
+            return self._create_error_note(f"note_{note_id:03d}", error_msg)
         
         # Phase 2: Structure recognition
         structure_result = await self.structure_agent.process(extraction_result.text)

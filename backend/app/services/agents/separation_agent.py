@@ -57,24 +57,29 @@ class SeparationAgent(BaseAgent):
         if not PYZBAR_AVAILABLE:
             self.logger.warning("pyzbar not available, QR code detection will be disabled")
     
-    async def process(self, image_path: str) -> Union[List[NoteRegion], PartialResult]:
+    async def process(self, image_path: str, config: Dict[str, Any] = None) -> Union[List[NoteRegion], PartialResult]:
         """
         Main processing method for note separation.
         
         Args:
             image_path: Path to the input image
+            config: Optional configuration dict with source_type, etc.
             
         Returns:
             List of NoteRegion objects or PartialResult if processing fails
         """
-        return await self.execute_with_retry(self._detect_note_regions, image_path)
+        return await self.execute_with_retry(self._detect_note_regions, image_path, config)
     
-    async def _detect_note_regions(self, image_path: str) -> List[NoteRegion]:
+    async def _detect_note_regions(self, image_path: str, config: Dict[str, Any] = None) -> List[NoteRegion]:
         """Internal method to detect note regions using parallel methods"""
         # Load image
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Could not load image: {image_path}")
+        
+        # Check if this is a Rocketbook image
+        source_type = config.get("source_type", "") if config else ""
+        is_rocketbook = source_type.lower() == "rocketbook"
         
         # Run all detection methods in parallel
         tasks = []
@@ -100,11 +105,26 @@ class SeparationAgent(BaseAgent):
                 valid_results.append(result)
         
         if not valid_results:
-            # All methods failed, return single region
-            return [self._create_single_region(image)]
+            # All methods failed
+            if is_rocketbook:
+                # For Rocketbook images, assume 3x3 grid
+                self.logger.info("All detection methods failed, assuming 3x3 grid for Rocketbook image")
+                return self._create_3x3_grid(image)
+            else:
+                return [self._create_single_region(image)]
         
         # Select method with highest confidence
         best_result = self._select_best_method(valid_results)
+        
+        # For Rocketbook images, if we detected fewer than 9 regions but have some QR codes,
+        # create a 3x3 grid instead
+        if is_rocketbook and len(best_result) < 9:
+            # Check if any QR codes were detected
+            qr_results = [r for r in results if isinstance(r, list) and len(r) > 0 and any(reg.qr_code for reg in r)]
+            if qr_results or len(best_result) >= 4:
+                # Likely a multi-note Rocketbook image - create 3x3 grid
+                self.logger.info(f"Detected {len(best_result)} regions for Rocketbook image, creating 3x3 grid")
+                return self._create_3x3_grid(image)
         
         # Log metrics
         self.log_metric("detection_method", len(best_result))
@@ -432,6 +452,32 @@ class SeparationAgent(BaseAgent):
         self.log_metric("detection_method_used", best_result[0].detection_method if best_result else "none")
         
         return best_result
+    
+    def _create_3x3_grid(self, image: np.ndarray) -> List[NoteRegion]:
+        """Create a 3x3 grid of note regions for Rocketbook images"""
+        height, width = image.shape[:2]
+        cell_width = width // 3
+        cell_height = height // 3
+        
+        regions = []
+        for i in range(9):
+            row = i // 3
+            col = i % 3
+            
+            x = col * cell_width
+            y = row * cell_height
+            w = cell_width
+            h = cell_height
+            
+            region = NoteRegion(
+                bbox=(x, y, w, h),
+                position=i + 1,
+                detection_method="3x3_grid_fallback",
+                confidence=0.7  # Moderate confidence for fallback
+            )
+            regions.append(region)
+        
+        return regions
     
     def _create_single_region(self, image: np.ndarray) -> NoteRegion:
         """Create a single region covering the entire image"""
