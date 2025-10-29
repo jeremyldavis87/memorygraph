@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Union
+from pydantic import Field
 import os
 import json
 from pathlib import Path
@@ -44,16 +45,19 @@ class Settings(BaseSettings):
     AGENT_MAX_RETRIES: int = int(os.getenv("AGENT_MAX_RETRIES", "1"))
     AGENT_ENABLE_BRAINTRUST: bool = os.getenv("AGENT_ENABLE_BRAINTRUST", "true").lower() == "true"
     
-    # Color-to-Category Mappings
-    AGENT_COLOR_CATEGORY_MAPPINGS: dict = {
-        "yellow": "general",
-        "pink": "urgent", 
-        "blue": "work",
-        "green": "personal",
-        "orange": "ideas",
-        "white": "notes",
-        "gray": "archive"
-    }
+    # Color-to-Category Mappings (not parsed from env - use default)
+    AGENT_COLOR_CATEGORY_MAPPINGS: dict = Field(
+        default={
+            "yellow": "general",
+            "pink": "urgent", 
+            "blue": "work",
+            "green": "personal",
+            "orange": "ideas",
+            "white": "notes",
+            "gray": "archive"
+        },
+        exclude=True  # Don't parse from env file
+    )
     
     # File Storage
     UPLOAD_DIR: str = "./uploads"
