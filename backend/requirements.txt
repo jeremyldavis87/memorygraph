@@ -16,7 +16,6 @@ bcrypt==4.0.1
 pillow==10.1.0
 numpy>=1.21.0,<2.0.0
 opencv-python-headless==4.8.1.78
-pytesseract==0.3.10
 pyzbar==0.1.9
 openai>=1.6.1,<2.0.0
 redis==5.0.1

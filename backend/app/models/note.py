@@ -24,7 +24,7 @@ class Note(Base):
     image_path = Column(String)  # Path to processed image
     
     # Processing
-    ocr_mode = Column(String, default="traditional")
+    ocr_mode = Column(String, default="llm")
     ocr_confidence = Column(Integer)  # 0-100
     processing_status = Column(String, default="pending")  # pending, processing, completed, failed
     

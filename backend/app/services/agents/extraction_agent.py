@@ -8,7 +8,6 @@ Merges results with Vision LLM as ground truth for optimal accuracy.
 import asyncio
 import cv2
 import numpy as np
-import pytesseract
 from typing import Dict, Any, Optional, Union, Tuple, List
 from difflib import SequenceMatcher
 import re
@@ -57,8 +56,6 @@ class ExtractionAgent(BaseAgent):
         super().__init__("ExtractionAgent")
         self.ai_service = AIService()
         
-        # Configure Tesseract
-        self.tesseract_config = r'--oem 3 --psm 6'
     
     async def process(self, image_path: str, region_bbox: Optional[Tuple[int, int, int, int]] = None, config: Optional[Dict[str, Any]] = None) -> Union[HybridResult, PartialResult]:
         """
@@ -96,20 +93,8 @@ class ExtractionAgent(BaseAgent):
             region_path = image_path
         
         try:
-            # Route based on ocr_mode
-            if ocr_mode == "traditional":
-                # Only use OCR
-                self.logger.info("Using traditional OCR mode (OCR only)")
-                ocr_result = await self._extract_with_ocr(region_path)
-                return HybridResult(
-                    text=ocr_result.text,
-                    confidence=ocr_result.confidence,
-                    ocr_version=ocr_result.text,
-                    llm_version="",
-                    differences=["Vision LLM skipped in traditional mode"],
-                    extraction_method="ocr_only"
-                )
-            elif ocr_mode == "llm":
+            # Only use Vision LLM (traditional OCR removed)
+            if ocr_mode == "llm":
                 # Only use Vision LLM
                 self.logger.info("Using LLM mode (Vision LLM only)")
                 llm_result = await self._extract_with_vision(region_path)
@@ -160,43 +145,6 @@ class ExtractionAgent(BaseAgent):
                 except:
                     pass
     
-    async def _extract_with_ocr(self, image_path: str) -> ExtractionResult:
-        """Extract text using Tesseract OCR"""
-        try:
-            # Load and preprocess image for OCR
-            image = cv2.imread(image_path)
-            processed_image = self._preprocess_for_ocr(image)
-            
-            # Extract text using Tesseract
-            text = pytesseract.image_to_string(processed_image, config=self.tesseract_config)
-            
-            # Get confidence scores
-            data = pytesseract.image_to_data(processed_image, output_type=pytesseract.Output.DICT)
-            confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            
-            # Calculate quality score
-            quality_score = self._calculate_ocr_quality_score(text, avg_confidence)
-            
-            return ExtractionResult(
-                text=text.strip(),
-                confidence=quality_score / 100.0,  # Convert to 0-1 range
-                method="ocr",
-                raw_data={
-                    "tesseract_confidence": avg_confidence,
-                    "word_count": len(text.split()),
-                    "character_count": len(text)
-                }
-            )
-            
-        except Exception as e:
-            self.logger.error(f"OCR extraction failed: {e}")
-            return ExtractionResult(
-                text="",
-                confidence=0.0,
-                method="ocr_failed",
-                raw_data={"error": str(e)}
-            )
     
     async def _extract_with_vision(self, image_path: str) -> ExtractionResult:
         """Extract text using Vision LLM"""
@@ -253,60 +201,6 @@ class ExtractionAgent(BaseAgent):
                 raw_data={"error": str(e)}
             )
     
-    def _preprocess_for_ocr(self, image: np.ndarray) -> np.ndarray:
-        """Preprocess image for optimal OCR results"""
-        # Convert to grayscale
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
-        
-        # Apply Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        
-        # Apply adaptive thresholding
-        thresh = cv2.adaptiveThreshold(
-            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-        )
-        
-        # Morphological operations to clean up
-        kernel = np.ones((1, 1), np.uint8)
-        cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-        
-        return cleaned
-    
-    def _calculate_ocr_quality_score(self, text: str, confidence: float) -> float:
-        """Calculate quality score for OCR results"""
-        if not text.strip():
-            return 0
-        
-        # Base score from OCR confidence
-        base_score = confidence
-        
-        # Check for common OCR errors
-        error_patterns = [
-            r'[^\w\s\.\,\!\?\:\;\-\(\)\[\]\{\}\"\'\/\\]',  # Unusual characters
-            r'\b\w{1}\b',  # Single character words (often OCR errors)
-            r'\b\w{20,}\b',  # Very long words (often OCR errors)
-        ]
-        
-        error_penalty = 0
-        for pattern in error_patterns:
-            matches = re.findall(pattern, text)
-            error_penalty += len(matches) * 2
-        
-        # Check for reasonable text structure
-        lines = text.split('\n')
-        non_empty_lines = [line.strip() for line in lines if line.strip()]
-        
-        if len(non_empty_lines) < 2:
-            error_penalty += 10
-        
-        # Check for excessive unusual characters
-        unusual_char_count = len(re.findall(r'[¥\\£]', text))
-        if unusual_char_count > 5:
-            error_penalty += 20
-        
-        # Calculate final score
-        final_score = max(0, base_score - error_penalty)
-        return min(100, final_score)
     
     def _calculate_vision_confidence(self, text: str) -> float:
         """Calculate confidence score for Vision LLM results"""

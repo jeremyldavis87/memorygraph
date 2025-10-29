@@ -12,7 +12,6 @@ from app.models.user import User
 from app.models.note import Note
 from app.schemas.note import NoteCreate, NoteResponse, NoteUpdate, NoteListResponse
 from app.api.api_v1.endpoints.auth import get_current_user
-from app.services.ocr_service import OCRService
 from app.services.ai_service import AIService
 from app.services.agent_service import NoteProcessingAgent
 from app.services.graph_client import graph_client, Triple
@@ -369,31 +368,92 @@ async def upload_note(
                     return parent_note
                 else:
                     # Fallback to single note processing if agent failed
-                    ocr_service = OCRService()
-                    ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+                    # Use LLM-only processing for single note
+                    user_model = current_user.vision_model_preference or settings.AGENT_VISION_MODEL
+                    agent = NoteProcessingAgent(user_model)
+                    config = {
+                        "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
+                        "vision_model_preference": user_model,
+                        "source_type": "rocketbook",
+                        "ocr_mode": "llm"
+                    }
                     
-                    # Process single note with traditional OCR
-                    return _create_single_note_from_ocr(
-                        ocr_result, file_path, category_id, current_user, db, ocr_mode
-                    )
+                    # Process single note with LLM
+                    processing_result = await agent.process_multi_note_image(file_path, config)
+                    
+                    if processing_result and hasattr(processing_result, 'notes'):
+                        notes_data = processing_result.notes if isinstance(processing_result.notes, list) else [processing_result.notes]
+                        if notes_data:
+                            note_data = notes_data[0]
+                            if hasattr(note_data, 'model_dump'):
+                                note_dict = note_data.model_dump()
+                            else:
+                                note_dict = note_data
+                            
+                            return _create_single_note_from_llm_result(
+                                note_dict, file_path, category_id, current_user, db
+                            )
+                    
+                    # If all else fails, raise an error
+                    raise HTTPException(status_code=500, detail="Failed to process image with LLM")
             else:
-                # Error case - fallback to traditional OCR
-                ocr_service = OCRService()
-                ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+                # Error case - use LLM-only processing
+                user_model = current_user.vision_model_preference or settings.AGENT_VISION_MODEL
+                agent = NoteProcessingAgent(user_model)
+                config = {
+                    "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
+                    "vision_model_preference": user_model,
+                    "source_type": "rocketbook",
+                    "ocr_mode": "llm"
+                }
                 
-                # Process single note with traditional OCR
-                return _create_single_note_from_ocr(
-                    ocr_result, file_path, category_id, current_user, db, ocr_mode
-                )
+                # Process single note with LLM
+                processing_result = await agent.process_single_note(file_path, config)
+                
+                if processing_result and hasattr(processing_result, 'notes'):
+                    notes_data = processing_result.notes if isinstance(processing_result.notes, list) else [processing_result.notes]
+                    if notes_data:
+                        note_data = notes_data[0]
+                        if hasattr(note_data, 'model_dump'):
+                            note_dict = note_data.model_dump()
+                        else:
+                            note_dict = note_data
+                        
+                        return _create_single_note_from_llm_result(
+                            note_dict, file_path, category_id, current_user, db
+                        )
+                
+                # If all else fails, raise an error
+                raise HTTPException(status_code=500, detail="Failed to process image with LLM")
         else:
-            # Use traditional OCR processing
-            ocr_service = OCRService()
-            ocr_result = ocr_service.process_image(file_path, mode=ocr_mode)
+            # Use LLM-only processing for single note
+            user_model = current_user.vision_model_preference or settings.AGENT_VISION_MODEL
+            agent = NoteProcessingAgent(user_model)
+            config = {
+                "ocr_confidence_threshold": current_user.ocr_confidence_threshold,
+                "vision_model_preference": user_model,
+                "source_type": "rocketbook",
+                "ocr_mode": "llm"
+            }
             
-            # Process single note with traditional OCR
-            return _create_single_note_from_ocr(
-                ocr_result, file_path, category_id, current_user, db, ocr_mode
-            )
+            # Process single note with LLM
+            processing_result = await agent.process_single_note(file_path, config)
+            
+            if processing_result and hasattr(processing_result, 'notes'):
+                notes_data = processing_result.notes if isinstance(processing_result.notes, list) else [processing_result.notes]
+                if notes_data:
+                    note_data = notes_data[0]
+                    if hasattr(note_data, 'model_dump'):
+                        note_dict = note_data.model_dump()
+                    else:
+                        note_dict = note_data
+                    
+                    return _create_single_note_from_llm_result(
+                        note_dict, file_path, category_id, current_user, db
+                    )
+            
+            # If all else fails, raise an error
+            raise HTTPException(status_code=500, detail="Failed to process image with LLM")
     else:
         # For non-image files, read as text
         try:
@@ -417,17 +477,22 @@ async def upload_note(
         }
         
         # Process single note with text content
-        return _create_single_note_from_ocr(
-            ocr_result, file_path, category_id, current_user, db, ocr_mode
+        return _create_single_note_from_llm_result(
+            ocr_result, file_path, category_id, current_user, db
         )
 
-def _create_single_note_from_ocr(ocr_result, file_path, category_id, current_user, db, ocr_mode):
+def _create_single_note_from_llm_result(llm_result, file_path, category_id, current_user, db):
     """
-    Helper function to create a single note from OCR results.
+    Helper function to create a single note from LLM processing results.
     """
     # Check for QR code mapping
     final_category_id = category_id
-    qr_code = ocr_result.get("qr_code")
+    qr_code = None
+    
+    # Extract QR code from LLM result
+    qr_codes = llm_result.get("qr_codes", [])
+    if qr_codes:
+        qr_code = qr_codes[0].get("data") if qr_codes else None
     
     if qr_code:
         # Check if QR code has a mapping
@@ -440,16 +505,24 @@ def _create_single_note_from_ocr(ocr_result, file_path, category_id, current_use
         if qr_mapping:
             final_category_id = qr_mapping.category_id
     
-    # Prepare content for hybrid storage
-    full_content = ocr_result.get("content", "")
-    full_original_text = ocr_result.get("original_text", "")
+    # Extract text content from LLM result
+    text_content = llm_result.get("text_content", {})
+    full_content = text_content.get("content", "")
+    full_original_text = text_content.get("original_text", "")
     content_preview = full_content[:1000] if full_content else ""
     original_text_preview = full_original_text[:1000] if full_original_text else ""
+    
+    # Extract other data from LLM result
+    structure = llm_result.get("structure", {})
+    tags = llm_result.get("tags", {})
+    entities = llm_result.get("entities", {})
+    quality_metrics = llm_result.get("quality_metrics", {})
+    processing_details = llm_result.get("processing_details", {})
     
     # Create note
     note = Note(
         user_id=current_user.id,
-        title=ocr_result.get("title", "Untitled"),
+        title=structure.get("title", "Untitled"),
         content=content_preview,  # Store preview in PostgreSQL
         original_text=original_text_preview,  # Store preview in PostgreSQL
         content_preview=content_preview,
@@ -458,15 +531,17 @@ def _create_single_note_from_ocr(ocr_result, file_path, category_id, current_use
         category_id=final_category_id,
         file_path=file_path,
         image_path=file_path,
-        ocr_mode=ocr_mode,
-        ocr_confidence=ocr_result.get("confidence", 0),
+        ocr_mode="llm",
+        ocr_confidence=quality_metrics.get("confidence", 0),
         processing_status="completed",
         note_metadata_json={
-            "sections": ocr_result.get("sections", []),
+            "sections": structure.get("sections", []),
             "qr_code": qr_code,
             "qr_code_mapped": qr_code is not None and final_category_id != category_id,
             "full_content": full_content,  # Store full content in metadata for now
-            "full_original_text": full_original_text
+            "full_original_text": full_original_text,
+            "llm_processing": True,
+            "processing_details": processing_details
         }
     )
     

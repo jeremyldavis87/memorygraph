@@ -10,7 +10,7 @@ class NoteBase(BaseModel):
 
 class NoteCreate(NoteBase):
     original_text: Optional[str] = None
-    ocr_mode: str = "traditional"
+    ocr_mode: str = "llm"
     file_path: Optional[str] = None
     image_path: Optional[str] = None
 

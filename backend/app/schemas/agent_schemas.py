@@ -117,7 +117,7 @@ class QualityMetrics(BaseModel):
 class ProcessingDetails(BaseModel):
     """Processing details"""
     preprocessing_applied: List[str] = []
-    ocr_engine: str = "tesseract"
+    ocr_engine: str = "llm"
     llm_model: str = Field(default_factory=lambda: settings.AGENT_VISION_MODEL)
     llm_tokens_used: int = 0
     post_processing_corrections: int = 0

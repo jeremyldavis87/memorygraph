@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # AI/ML
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     BRAINTRUST_API_KEY: Optional[str] = os.getenv("BRAINTRUST_API_KEY")
-    OCR_MODE: str = os.getenv("OCR_MODE", "llm")  # traditional, llm, or auto - default to LLM for better results
+    OCR_MODE: str = os.getenv("OCR_MODE", "llm")  # llm only - uses Vision LLM for text extraction
     
     # Agent Configuration
     AGENT_VISION_MODEL: str = os.getenv("AGENT_VISION_MODEL", "gpt-4o")

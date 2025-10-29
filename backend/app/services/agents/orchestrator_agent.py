@@ -342,7 +342,7 @@ class OrchestratorAgent(BaseAgent):
             },
             "processing_details": {
                 "preprocessing_applied": ["denoise", "contrast_enhancement", "deskew"],
-                "ocr_engine": "tesseract",
+                "ocr_engine": "llm",
                 "llm_model": config.get("vision_model_preference", settings.AGENT_VISION_MODEL),
                 "llm_tokens_used": 0,  # Could be tracked from AI service
                 "post_processing_corrections": len(postprocess_result.corrections)

@@ -17,7 +17,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Settings
-    default_ocr_mode = Column(String, default="traditional")
+    default_ocr_mode = Column(String, default="llm")
     auto_capture = Column(Boolean, default=True)
     ai_processing_enabled = Column(Boolean, default=True)
     vision_model_preference = Column(String, default="gpt-5-mini")
